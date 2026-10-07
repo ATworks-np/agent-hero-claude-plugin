@@ -94,6 +94,9 @@ export type Monster = {
   // 防御力。旧形式のセーブの敵には無いので、階から計算した値を使う (game.ts の monsterDef)
   def?: number
   isBoss: boolean
+  // 各階の最後の部屋の最後にいるミニボス。ボスと同じく装備を落とす。miniboss は何体目の種類か (config/content.ts の minibosses)
+  isMiniBoss?: boolean
+  miniboss?: number
   trait?: BossTrait
   // スキル「盾打ち」で動けない残り回数
   stun?: number

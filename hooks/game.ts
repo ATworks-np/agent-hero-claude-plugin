@@ -297,8 +297,33 @@ export const monsterName = (monster: Monster, lang: Lang): string => {
     const boss = content.bosses[monster.boss % content.bosses.length]!
     return `${content.bossRepeatPrefix.repeat(Math.floor(monster.boss / content.bosses.length))}${boss.name}`
   }
+  if (monster.miniboss !== undefined) {
+    const kind = content.minibosses[monster.miniboss % content.minibosses.length]!
+    return `${content.bossRepeatPrefix.repeat(Math.floor(monster.miniboss / content.minibosses.length))}${kind.name}`
+  }
   if (monster.kind !== undefined && monster.tier !== undefined) return `${tierPrefix(monster.tier, lang)}${content.monsters[monster.kind]!.name}`
   return monster.name
+}
+
+// 各階の最後の部屋の最後に出るミニボス。Tier ごとに 1 種類
+export const spawnMiniBoss = (floor: number, x: number): Monster => {
+  const round = tierOf(floor)
+  const kind = CONTENT.minibosses[round % CONTENT.minibosses.length]!
+  const stats = BALANCE.monster.miniboss
+  const hp = monsterHp(floor, stats.hp)
+  return {
+    name: `${CONTENT.bossRepeatPrefix.repeat(Math.floor(round / CONTENT.minibosses.length))}${kind.name}`,
+    miniboss: round,
+    ch: kind.ch,
+    color: kind.color,
+    x,
+    hp,
+    maxHp: hp,
+    atk: monsterAtk(floor, stats.atk),
+    def: Math.round(monsterDef(floor) * stats.def),
+    isBoss: false,
+    isMiniBoss: true,
+  }
 }
 
 export const spawnBoss = (floor: number, x: number): Monster => {
@@ -335,7 +360,11 @@ export const populate = (floor: number, room: number, heroX: number): Monster[] 
     return Math.floor(rng() * kindsOn(floor))
   }
   return points
-    .map((x, i) => (isBossFloor(floor) && room === roomsOn(floor) && i === points.length - 1 ? spawnBoss(floor, x) : spawnKind(floor, pick(), x)))
+    .map((x, i) => {
+      // 最後の部屋の最後の位置には、ボスの階ならボス、ほかの階ならミニボスを置く
+      if (room === roomsOn(floor) && i === points.length - 1) return isBossFloor(floor) ? spawnBoss(floor, x) : spawnMiniBoss(floor, x)
+      return spawnKind(floor, pick(), x)
+    })
     .filter(monster => monster.x > heroX)
 }
 
@@ -402,7 +431,7 @@ export const makeEquipment = (
   return { id, name: tiered(kind === 'weapon' ? CONTENT.weapons : CONTENT.armors, tier), kind, power: Math.round(base * scale), quality, tier }
 }
 
-const makeLoot = (save: Save, rng: Rng, isBoss: boolean): Item | null => {
+const makeLoot = (save: Save, rng: Rng, monster: Monster): Item | null => {
   const id = `i${save.nextId}`
   const tier = tierOf(save.floor)
   const m = mods(save)
@@ -419,8 +448,10 @@ const makeLoot = (save: Save, rng: Rng, isBoss: boolean): Item | null => {
     const quality = Math.min(QUALITIES.length - 1, (item.quality ?? 0) + buffs.goldenhand)
     return { ...item, quality, power: Math.round((item.power / qualityScale(item.quality ?? 0)) * qualityScale(quality)) }
   }
-  if (isBoss) return lift(makeEquipment(id, tier + 1, 1, rng, BALANCE.equipment.bossMinQuality, bonus))
-  const dropRate = BALANCE.equipment.dropRate + m.dropRate + (buffs.scent?.pct ?? 0)
+  if (monster.isBoss) return lift(makeEquipment(id, tier + 1, 1, rng, BALANCE.equipment.bossMinQuality, bonus))
+  // 装備を落とすのはミニボスとボスだけ
+  if (!monster.isMiniBoss) return null
+  const dropRate = BALANCE.equipment.minibossDropRate + m.dropRate + (buffs.scent?.pct ?? 0)
   if (!buffs.plunder && rng() >= dropRate) return null
   return lift(makeEquipment(id, tier, floorInTier(save.floor), rng, 0, bonus))
 }
@@ -831,10 +862,12 @@ const defeat = (save: Save, scene: Scene, monster: Monster, frame: number, rng: 
     next = addRelic({ ...next, nextId: next.nextId + 1 }, relic)
     notes.push({ kind: 'loot', text: say(save, 'log.relicGot', { name: relicName(relic, langOf(save)) }) })
   }
-  const loot = makeLoot(next, rng, monster.isBoss)
-  // 撃破とドロップで使い切る効果を外す。宝の匂いは残りの体数を減らす
-  const scent = b.scent && b.scent.kills > 1 ? { ...b.scent, kills: b.scent.kills - 1 } : undefined
-  const used: Buffs = { ...next.buffs, plunder: undefined, scent }
+  const loot = makeLoot(next, rng, monster)
+  // ドロップで使い切る効果を外す。強奪と宝の匂いは、装備を落とす敵 (ミニボス・ボス) を倒したときだけ使う。
+  // 宝の匂いは残りの体数を減らす
+  const dropsGear = monster.isBoss || monster.isMiniBoss === true
+  const scent = !dropsGear ? b.scent : b.scent && b.scent.kills > 1 ? { ...b.scent, kills: b.scent.kills - 1 } : undefined
+  const used: Buffs = { ...next.buffs, plunder: dropsGear ? undefined : b.plunder, scent }
   next = { ...next, buffs: loot ? { ...used, appraise: undefined, goldenhand: undefined } : used }
   if (loot) {
     next = pickUp(next, loot)

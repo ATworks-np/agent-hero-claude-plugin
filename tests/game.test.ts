@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { CORRIDOR, QUALITIES, TOKENS_PER_MEMORY, floorFeature, floorTheme, roomsOn, autoExplore, farm, tokenMultiplier, allocate, ratioDamage, defense, salvageAll, salvageValue, forge, forgeCost, forgeRate, refund, populate, attack, displayName, itemName, monsterName, gainTokens, makeEquipment, maxHp, migrate, newSave, newScene, spawn, spawnBoss, step, tierOf, weightedTokens } from '../hooks/game'
+import { CORRIDOR, QUALITIES, TOKENS_PER_MEMORY, floorFeature, floorTheme, roomsOn, autoExplore, farm, tokenMultiplier, allocate, ratioDamage, defense, salvageAll, salvageValue, forge, forgeCost, forgeRate, refund, populate, attack, displayName, itemName, monsterName, gainTokens, makeEquipment, maxHp, migrate, newSave, newScene, spawn, spawnBoss, spawnMiniBoss, step, tierOf, weightedTokens } from '../hooks/game'
 import { makeRelic, relicName } from '../hooks/relics'
 import { PAGES, TREE_NODES, canAffordUpgrade, nodeText, availableNodes, formatAmount, isStart, modLines, mods, nodeCost, unlockedPages } from '../hooks/tree'
 import type { Save } from '../types'
@@ -165,6 +165,10 @@ test('10 階ごとのボスの階は部屋 1 つだけで、階段の手前に�
   expect(roomsOn(11)).toBe(5)
   expect(populate(10, 1, 0).at(-1)?.isBoss).toBe(true)
   expect(populate(11, 5, 0).some(monster => monster.isBoss)).toBe(false)
+  // ボスの階以外は、最後の部屋の最後にミニボスがいる。同じ Tier の階は同じミニボス
+  expect(populate(11, 5, 0).at(-1)?.isMiniBoss).toBe(true)
+  expect(populate(12, 5, 0).at(-1)?.name).toBe(populate(19, 5, 0).at(-1)?.name)
+  expect(populate(11, 1, 0).some(monster => monster.isMiniBoss)).toBe(false)
   expect(save.floor).toBe(11)
   expect(save.inventory.some(item => item.name === '銅の剣' || item.name === '革の鎧')).toBe(true)
   expect(spawnBoss(20, 0).name).toBe('ヴァンパイアロード')
@@ -191,8 +195,8 @@ test('取得したノードの効果は全ページ分を合算して一覧に�
 test('インベントリがあふれたら一番弱い装備を分解して memory にする', async () => {
   const items = Array.from({ length: 20 }, (_, i) => makeEquipment(`x${i}`, 1, 1, () => 0.3))
   const save: Save = { ...newSave(), memory: 0, inventory: [...newSave().inventory, ...items.slice(0, 19)] }
-  const monster = { ...spawn(1, 6, () => 0.5), hp: 1 }
-  // 強奪をかけて必ず落とさせ、21 個目で一番弱い 1 個を分解させる
+  const monster = { ...spawnMiniBoss(1, 6), hp: 1 }
+  // ミニボスに強奪をかけて必ず落とさせ、21 個目で一番弱い 1 個を分解させる
   const r = step({ ...save, buffs: { plunder: true } }, { ...newScene(), phase: 'fight', x: 5, monster, frame: 1 }, () => 0.5)
   expect(r.save.inventory.length).toBe(20)
   expect(r.save.memory > 0).toBe(true)

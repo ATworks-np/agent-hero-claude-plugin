@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import { BALANCE } from '../config/balance'
 
-import { allocate, maxHp, newSave, newScene, refund, spawn, step } from '../hooks/game'
+import { allocate, maxHp, newSave, newScene, refund, spawn, spawnMiniBoss, step } from '../hooks/game'
 import {
   SKILLS,
   SKILL_SLOTS,
@@ -87,10 +87,13 @@ test('補助スキル: 鉄壁は攻撃を防ぎ、ヒールは HP が減った�
   expect(healed.save.hp).toBe(5 + Math.round(maxHp(hurt) * 0.25))
 })
 
-test('探索スキル: 強奪をかけると次に倒した敵が必ず装備を落とす', async () => {
+test('探索スキル: 強奪をかけると、普通の敵では使わずに残り、次に倒したミニボスが必ず装備を落とす', async () => {
   const save = withSkills(['plunder'])
   const before = save.inventory.length
-  const r = step(save, fightScene({ ...spawn(1, 6, () => 0.5), hp: 1 }, 1), () => 0.99)
+  const normal = step(save, fightScene({ ...spawn(1, 6, () => 0.5), hp: 1 }, 1), () => 0.99)
+  expect(normal.save.inventory.length).toBe(before)
+  expect(normal.save.buffs?.plunder).toBe(true)
+  const r = step(normal.save, fightScene({ ...spawnMiniBoss(1, 6), hp: 1 }, 1), () => 0.99)
   expect(r.save.inventory.length).toBe(before + 1)
   expect(r.save.buffs?.plunder).toBeUndefined()
 })

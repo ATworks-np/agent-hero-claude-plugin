@@ -7,7 +7,7 @@
 //   --hours   作業する日にセッションを開いている時間 (既定 6)。勇者はセッションが開いている間だけ進む
 //   --days    何日分 (暦日) 回すか。土日は作業しない (トークンも使わず、勇者も止まる)
 //   --seed    乱数の種
-//   --set     config/balance.ts の値を書き換えて試す。何度でも指定できる (例: --set monster.hpGrowth=14 --set equipment.dropRate=0.08)
+//   --set     config/balance.ts の値を書き換えて試す。何度でも指定できる (例: --set monster.hpGrowth=14 --set equipment.minibossDropRate=0.6)
 // 遊び方 (このスクリプトが自動で行う):
 //   - memory が貯まり次第、強化ツリーの開いているページで一番安いものから取る。同じ値段ならキーストーン (次のページが開く)、
 //     新しいノード、小ノードの Lv 上げの順

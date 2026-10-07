@@ -107,6 +107,8 @@ export const BALANCE = {
       elderdragon: { hp: 6, atk: 1.6, trait: 'armor' },
       demonking: { hp: 7, atk: 1.8, trait: 'regen' },
     },
+    // ミニボスの HP・攻撃力・防御力の倍率
+    miniboss: { hp: 2.5, atk: 1.2, def: 1.2 },
     traits: {
       // 受けたダメージのうち取り戻す割合
       regen: 0.2,
@@ -135,8 +137,8 @@ export const BALANCE = {
 
   // 装備
   equipment: {
-    // 落とす確率 (通常の敵)。ボスは必ず落とす
-    dropRate: 0.05,
+    // 装備を落とすのはミニボスとボスだけ。ミニボスが落とす確率 (ボスは必ず落とす)
+    minibossDropRate: 0.8,
     // 性能 = (Tier × perTier + base + 階の深さの分 + 0〜roll−1) × 品質の倍率
     weapon: { perTier: 15, base: 2, depthDivisor: 2, roll: 5 },
     armor: { perTier: 10, base: 1, depthDivisor: 3, roll: 3 },
@@ -208,7 +210,7 @@ export const BALANCE = {
     // T(n) の起点の効果 = startMods × startGrowth ^ (n − 1)。0 にすると T2 以降の起点はトークン倍率だけになる
     startGrowth: 1.2,
     // 費用 = baseCost × pageCostMult ^ (T − 1) × (そのページでの購入回数 + 1) ^ costExponent
-    baseCost: 420,
+    baseCost: 340,
     pageCostMult: 2,
     costExponent: 1.0,
     // 小ノードの最大 Lv (Lv 上げも購入 1 回と数える)
