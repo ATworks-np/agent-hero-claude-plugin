@@ -3,5 +3,10 @@
   "version": "0.1.0",
   "description": "A hero auto-crawls a dungeon above the prompt, powered by the tokens you spend. /agent-hero opens upgrades, skills, gear and the map.",
   "types": "./types/index.d.ts",
-  "license": "MIT"
+  "license": "MIT",
+  "author": {
+    "name": "atworks-np"
+  },
+  "homepage": "https://github.com/ATworks-np/agent-hero",
+  "repository": "https://github.com/ATworks-np/agent-hero"
 }

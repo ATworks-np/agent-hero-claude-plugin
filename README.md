@@ -20,11 +20,15 @@ English is available too. Switch the language in the Settings tab.
 
 ## インストール
 
-Claude Code のスキル置き場に clone し、Claude Code で `/reload-plugins` を実行してください。
+Claude Code のプロンプトで次の 1 行を実行してください。
 
-```sh
-git clone git@github.com:ATworks-np/agent-hero.git ~/.claude/skills/agent-hero
 ```
+/plugin install agent-hero --marketplace ATworks-np/agent-hero
+```
+
+マーケットプレイスを追加するか聞かれたら `y` と答え、インストール先のスコープを選びます。ユーザースコープを選ぶと、すべてのプロジェクトで勇者が動きます。インストールが終わると、そのセッションですぐに動き始めます。
+
+更新は `claude plugin update agent-hero` のあと `/reload-plugins` で反映されます。進行は設定フォルダの `agent-hero/` (既定では `~/.claude/agent-hero/`) に保存するので、更新や入れ直しでは消えません。
 
 関数フック (function hooks) 形式のプラグインに対応した Claude Code が必要です。
 
@@ -101,8 +105,6 @@ git clone git@github.com:ATworks-np/agent-hero.git ~/.claude/skills/agent-hero
 
 勇者は 1 人で、Claude Code のどのセッションでも同じ勇者が冒険しています。どのセッションで使ったトークンも合算されます。強化などの操作は、どのセッションから行っても全セッションに反映されます。
 
-進行は `~/.claude/agent-hero/` に保存されます。プラグインを入れ直しても消えません。
-
 ## 調整する
 
 数値と文言はコードから分けて、次のファイルに置いています。
@@ -121,6 +123,8 @@ tools/simulate.sh --days 30 --set monster.hpGrowth=10
 ```
 
 テストは `claude plugin test .` で実行します。
+
+手元で改造しながら遊ぶときは、clone したフォルダを `claude --plugin-dir <フォルダ>` で読み込んでください。マーケットプレイスから入れた版と同時に読み込むと勇者が二重に動くので、先に `claude plugin uninstall agent-hero` で外しておきます。
 
 ## ライセンス
 

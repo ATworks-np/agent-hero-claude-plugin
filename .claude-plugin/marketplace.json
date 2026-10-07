@@ -1,0 +1,14 @@
+{
+  "name": "agent-hero",
+  "owner": {
+    "name": "atworks-np"
+  },
+  "description": "Agent Hero: an idle dungeon RPG that lives above the Claude Code prompt.",
+  "plugins": [
+    {
+      "name": "agent-hero",
+      "source": "./",
+      "description": "A hero auto-crawls a dungeon above the prompt, powered by the tokens you spend. /agent-hero opens upgrades, skills, gear and the map."
+    }
+  ]
+}

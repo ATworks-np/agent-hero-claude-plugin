@@ -80,10 +80,13 @@ const TABS: Tab[] = ['status', 'tree', 'skill', 'relic', 'equipment', 'inventory
 // タブを 2 段に並べるときの 1 段目の数
 const TABS_FIRST_ROW = 5
 
-// 共有データはプラグインの外 (~/.claude/agent-hero/) に置き、プラグインを入れ直しても消えないようにする
+// 共有データはプラグインの外 (設定フォルダの agent-hero/。既定では ~/.claude/agent-hero/) に置き、
+// プラグインを入れ直したり更新したりしても消えないようにする。プラグインの置き場所は、マーケットプレイスから
+// 入れたものが <設定フォルダ>/plugins/ の下、スキル置き場に直接置いたものが <設定フォルダ>/skills/ の下。
+// どちらでもない (--plugin-dir で読み込んだ) ときはプラグインのフォルダの data/ に置く
 const dataDir = (root: string): string => {
-  const at = root.lastIndexOf('/.claude/')
-  return at >= 0 ? `${root.slice(0, at)}/.claude/agent-hero` : `${root}/data`
+  const at = Math.max(root.lastIndexOf('/plugins/'), root.lastIndexOf('/skills/'))
+  return at >= 0 ? `${root.slice(0, at)}/agent-hero` : `${root}/data`
 }
 
 const parse = <T,>(text: string): T | null => {
