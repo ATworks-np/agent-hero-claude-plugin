@@ -61,7 +61,7 @@ const onKey = (surface: ClientSurface<State>, key: string) => {
   } else if (key === 'backspace' || key === 'delete') {
     const node = props.nodes.find(one => one.x === state.x && one.y === state.y)
     if (node?.canRefund) post({ refund: node.id })
-  } else if (key === 'e') {
+  } else if (key === 'u') {
     const node = props.nodes.find(one => one.x === state.x && one.y === state.y)
     if (node && node.upgradeCost !== null) post({ upgrade: node.id })
   }
