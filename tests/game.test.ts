@@ -391,10 +391,10 @@ test('memory が足りて取れるノードがあるときだけ、強化でき�
   expect(canAffordUpgrade({ ...save, memory: nodeCost(1, 0) - 1 })).toBe(false)
 })
 
-test('起点の効果: T1 は最大 HP・攻撃力・防御力、T2 以降はページが開くとトークン倍率を 2 倍にする', async () => {
+test('起点の効果: T1 は最大 HP・攻撃力・防御力、T2 以降はそれをページごとに増やした値とトークン倍率 ×2', async () => {
   const start = (tier: number) => [...TREE_NODES.values()].find(node => node.tier === tier && isStart(node.id))!
   expect(nodeText(start(1), 0)).toBe('攻撃力 +5、防御力 +5、最大 HP +50')
-  expect(nodeText(start(2), 0)).toBe('トークン倍率 ×2')
+  expect(nodeText(start(2), 0)).toBe('トークン倍率 ×2、攻撃力 +6、防御力 +6、最大 HP +60')
   const save = newSave()
   expect(maxHp(save)).toBe(51)
   expect(tokenMultiplier(save)).toBe(1)
