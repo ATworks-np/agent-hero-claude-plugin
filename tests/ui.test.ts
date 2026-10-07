@@ -4,7 +4,17 @@ import type { Engine } from 'claude-code/testing'
 
 const SURFACES = ['terminal', 'desktop'] as const
 const MANIFEST = JSON.stringify({ name: 'agent-hero', version: '0.1.0', repository: 'https://github.com/owner/repo' })
-const start = async ($: Engine, on: On, latest = '0.1.0') => {
+const PANE_PROPS = { title: 'Agent Hero', isFocused: true, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 10 }, view: {} } as const
+
+// はじめての起動の手順 (言語を選ぶ → わかりました) を済ませて冒険を始める
+const begin = async ($: Engine) => {
+  const pane = await $.ui.mount({ plugin: 'agent-hero', surface: 'terminal', component: 'Pane', requestId: 'agent-hero', props: PANE_PROPS })
+  await pane.press({ key: 'setup-lang-ja' })
+  await pane.press({ key: 'setup-ok' })
+  await pane.unmount()
+}
+
+const boot = async ($: Engine, on: On, latest = '0.1.0') => {
   on('http.fetch', () => ({ value: { status: 200, ok: true, headers: {}, text: JSON.stringify({ version: latest }) } }))
   on('command.register', () => ({ value: { command: 'agent-hero' } }))
   const files = new Map<string, string>()
@@ -23,6 +33,11 @@ const start = async ($: Engine, on: On, latest = '0.1.0') => {
   }))
   on('session.start', () => ({ cwd: '/tmp' }))
   await $.session.start({ cwd: '/tmp', surface: 'terminal', isInteractive: true })
+}
+
+const start = async ($: Engine, on: On, latest = '0.1.0') => {
+  await boot($, on, latest)
+  await begin($)
 }
 const scroll = { offset: 0, bodyRows: 10 }
 
@@ -176,4 +191,34 @@ test('最新の版で動いていれば、アップデートの表示は出な�
   })
   expect(await band.find({ text: '⬆ アップデートがあります (v0.1.0 → v0.1.0)' })).toBeUndefined()
   await band.unmount()
+})
+
+test('はじめての起動では冒険が始まらず、言語を選んで開発版の注意に同意すると始まる', async ($, on) => {
+  await boot($, on)
+  const band = await $.ui.mount({
+    plugin: 'agent-hero',
+    surface: 'terminal',
+    component: 'AbovePrompt',
+    props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 100, scroll, view: {} },
+  })
+  expect(await band.find({ text: '/agent-hero を入力して冒険を始めてください' })).toBeDefined()
+  expect(await band.find({ text: 'PWR 0 ' })).toBeUndefined()
+  await band.unmount()
+
+  const pane = await $.ui.mount({ plugin: 'agent-hero', surface: 'terminal', component: 'Pane', requestId: 'agent-hero', props: PANE_PROPS })
+  expect(await pane.find({ key: 'setup-lang-en' })).toBeDefined()
+  await pane.press({ key: 'setup-lang-en' })
+  expect(await pane.find({ text: 'This is a development version' })).toBeDefined()
+  await pane.press({ key: 'setup-ok' })
+  expect(await pane.find({ key: 'tab-settings' })).toBeDefined()
+  await pane.unmount()
+
+  const after = await $.ui.mount({
+    plugin: 'agent-hero',
+    surface: 'terminal',
+    component: 'AbovePrompt',
+    props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 100, scroll, view: {} },
+  })
+  expect(await after.find({ text: 'PWR 0 ' })).toBeDefined()
+  await after.unmount()
 })

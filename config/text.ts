@@ -140,6 +140,15 @@ const ja = {
   'settings.step3': '3. /reload-plugins',
   'settings.step3Note': '   入れ替えた版を読み込む。反映されないときは Claude Code を再起動する',
 
+  // はじめての起動
+  'setup.prompt': '/agent-hero を入力して冒険を始めてください',
+  'setup.chooseLanguage': '言語を選んでください',
+  'setup.devTitle': 'これは開発版です',
+  'setup.devUnstable': '動作が安定しないことがあります。',
+  'setup.devProgress': 'アップデートで、進行状況が変わったり消えたりすることがあります。',
+  'setup.ok': 'わかりました',
+  'setup.back': '言語を選び直す',
+
   // アップデート
   'update.available': 'アップデートがあります (v{current} → v{latest})',
   'update.how': '! claude plugin marketplace update agent-hero && claude plugin update agent-hero を実行してから /reload-plugins してください',
@@ -340,6 +349,14 @@ const en: Record<TextKey, string> = {
   'settings.step2Note': '   Replace the plugin with the latest version',
   'settings.step3': '3. /reload-plugins',
   'settings.step3Note': '   Load the new version. If it does not take effect, restart Claude Code',
+
+  'setup.prompt': 'Type /agent-hero to start the adventure',
+  'setup.chooseLanguage': 'Choose a language',
+  'setup.devTitle': 'This is a development version',
+  'setup.devUnstable': 'It may not work reliably.',
+  'setup.devProgress': 'Updates may change or erase your progress.',
+  'setup.ok': 'I understand',
+  'setup.back': 'Choose the language again',
 
   'update.available': 'An update is available (v{current} → v{latest})',
   'update.how': 'Run ! claude plugin marketplace update agent-hero && claude plugin update agent-hero, then /reload-plugins',

@@ -79,6 +79,8 @@ const sceneAtom = atom({ plugin: 'agent-hero', key: 'scene' } as const, null)
 const tabAtom = atom({ plugin: 'agent-hero', key: 'tab' } as const, 'status')
 const pageAtom = atom({ plugin: 'agent-hero', key: 'treePage' } as const, 1)
 const workingAtom = atom({ plugin: 'agent-hero', key: 'isWorking' } as const, false)
+const notStartedAtom = atom({ plugin: 'agent-hero', key: 'notStarted' } as const, false)
+const setupLangAtom = atom({ plugin: 'agent-hero', key: 'setupLang' } as const, null)
 const versionAtom = atom({ plugin: 'agent-hero', key: 'version' } as const, null)
 const updateAtom = atom({ plugin: 'agent-hero', key: 'update' } as const, null)
 
@@ -143,6 +145,8 @@ type Ctx = {
   lastScene: string
   inbox: Inbox
   inboxCache: Map<string, { mtimeMs: number; inbox: Inbox }>
+  // 冒険が始まっているか。始まる前に使ったトークンは数えない
+  isStarted: boolean
 }
 
 const paths = (root: string, me: string) => {
@@ -160,16 +164,33 @@ async function writeInbox($: EngineInterface, ctx: Ctx) {
   await $.fs.write(paths($.plugin.root, ctx.me).inbox, JSON.stringify(ctx.inbox))
 }
 
-// world.json が無いときだけ作る。読めない (書き込み途中など) ときは作り直さず、その回を見送る。
+// world.json が無ければ冒険はまだ始まっていない (始めるのはペインの「わかりました」)。
+// 読めない (書き込み途中など) ときは作り直さず、その回を見送る。
 async function readWorld($: EngineInterface, ctx: Ctx): Promise<World | null> {
+  const path = paths($.plugin.root, ctx.me).world
+  const isMissing = !(await $.fs.exists(path))
+  if ((await read($, notStartedAtom)) !== isMissing) await update($, notStartedAtom, () => isMissing)
+  ctx.isStarted = !isMissing
+  if (isMissing) return null
+  return parse<World>(await $.fs.read(path))
+}
+
+// 冒険を始める。ほかのセッションが先に始めていれば何もしない。
+// 始める前に各セッションが受信箱に書いたトークンは取り込み済みとして扱い、数えない
+async function startAdventure($: EngineInterface, ctx: Ctx, lang: Lang) {
   const path = paths($.plugin.root, ctx.me).world
   if (!(await $.fs.exists(path))) {
     const stored = (await $.store.get(STORE_KEY)) as Save | undefined
     const world = newWorld(stored)
-    await $.fs.write(path, JSON.stringify(world))
-    return world
+    const now = await $.clock.now()
+    const applied: World['applied'] = {}
+    for (const [id, inbox] of Object.entries(await readInboxes($, ctx, now))) {
+      applied[id] = { tokens: inbox.tokens ?? 0, cmd: Math.max(0, ...inbox.cmds.map(cmd => cmd.seq)) }
+    }
+    await $.fs.write(path, JSON.stringify({ ...world, applied, save: { ...world.save, lang } }))
   }
-  return parse<World>(await $.fs.read(path))
+  await update($, setupLangAtom, () => null)
+  await tick($, ctx)
 }
 
 async function readInboxes($: EngineInterface, ctx: Ctx, now: number): Promise<Record<string, Inbox>> {
@@ -349,6 +370,7 @@ export const register: Register = on => {
     lastScene: '',
     inbox: { tokens: 0, cmds: [], workingAt: 0 },
     inboxCache: new Map(),
+    isStarted: false,
   }
 
   on('session.start', async ($, e, next) => {
@@ -382,7 +404,7 @@ export const register: Register = on => {
 
   on('turn.step', async function* ($, e, next) {
     const result = yield* next(e)
-    if (result.usage) {
+    if (result.usage && ctx.isStarted) {
       ctx.inbox.tokens += weightedTokens(result.usage)
       await writeInbox($, ctx)
     }
@@ -442,6 +464,15 @@ export const register: Register = on => {
     if (e.props.hasSurvey) return next(e)
     const save = await read($, saveAtom)
     const scene = await read($, sceneAtom)
+    if (await read($, notStartedAtom)) {
+      const { Box, Text } = $.ui.resolve(e)
+      return (
+        <Box flexDirection="column" alignItems="flex-end" width={e.props.bodyColumns}>
+          <Text color="#ffd700" bold>{t('ja', 'setup.prompt')}</Text>
+          <Text color="#ffd700">{t('en', 'setup.prompt')}</Text>
+        </Box>
+      )
+    }
     if (!save || !scene) return next(e)
     const isWorking = await read($, workingAtom)
     const newVersion = await read($, updateAtom)
@@ -513,6 +544,37 @@ export const register: Register = on => {
     const elements = $.ui.resolve(e)
     const { Box, Button, Text } = elements
     const save = await read($, saveAtom)
+    if (await read($, notStartedAtom)) {
+      const chosen = await read($, setupLangAtom)
+      // 1. 言語を選ぶ (どちらの言語かまだ分からないので、両方の言語で書く)
+      if (!chosen) {
+        return (
+          <Box flexDirection="column" gap={1}>
+            <Text bold color="#ffd700">Agent Hero</Text>
+            <Text>{`${t('ja', 'setup.chooseLanguage')} / ${t('en', 'setup.chooseLanguage')}`}</Text>
+            <Box flexDirection="row" gap={2}>
+              {LANGUAGES.map(one => (
+                <Button key={`setup-lang-${one.id}`} label={one.name} onPress={() => update($, setupLangAtom, () => one.id)} />
+              ))}
+            </Box>
+          </Box>
+        )
+      }
+      // 2. 選んだ言語で開発版の注意を出し、「わかりました」で始める
+      return (
+        <Box flexDirection="column" gap={1}>
+          <Text bold color="#ffd700">{t(chosen, 'setup.devTitle')}</Text>
+          <Box flexDirection="column">
+            <Text>{t(chosen, 'setup.devUnstable')}</Text>
+            <Text>{t(chosen, 'setup.devProgress')}</Text>
+          </Box>
+          <Box flexDirection="row" gap={2}>
+            <Button key="setup-ok" label={t(chosen, 'setup.ok')} onPress={() => startAdventure($, ctx, chosen)} />
+            <Button key="setup-back" label={t(chosen, 'setup.back')} dimColor onPress={() => update($, setupLangAtom, () => null)} />
+          </Box>
+        </Box>
+      )
+    }
     if (!save) return <Text dimColor>{t('ja', 'pane.loading')}</Text>
     const top = maxHp(save)
     const lang = langOf(save)

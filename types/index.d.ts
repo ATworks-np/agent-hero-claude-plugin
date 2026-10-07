@@ -143,6 +143,10 @@ declare module 'claude-code' {
       tab: Tab
       isWorking: boolean
       treePage: number
+      // まだ冒険を始めていない (共有データが無い)。始めるまでは勇者は動かず、トークンも数えない
+      notStarted: boolean
+      // 始める前に選んだ言語。選んだあとに開発版の注意を出す
+      setupLang: 'ja' | 'en' | null
       // 動いている版 (plugin.json の version)
       version: string | null
       // 新しい版が出ていれば、動いている版と最新の版
