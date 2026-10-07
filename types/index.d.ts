@@ -143,6 +143,8 @@ declare module 'claude-code' {
       tab: Tab
       isWorking: boolean
       treePage: number
+      // 動いている版 (plugin.json の version)
+      version: string | null
       // 新しい版が出ていれば、動いている版と最新の版
       update: { current: string; latest: string } | null
     }

@@ -129,6 +129,10 @@ const ja = {
   'settings.language': '言語',
   'settings.languageNote': '画面・記録・名前の言語。すでに書かれた記録は書いた時点の言語のまま',
 
+  'settings.version': 'バージョン',
+  'settings.latest': '最新は v{latest}',
+  'settings.upToDate': '最新',
+
   // アップデート
   'update.available': 'アップデートがあります (v{current} → v{latest})',
   'update.how': '! claude plugin update agent-hero を実行してから /reload-plugins してください',
@@ -318,6 +322,10 @@ const en: Record<TextKey, string> = {
 
   'settings.language': 'Language',
   'settings.languageNote': 'Language of the screens, log and names. Existing log lines stay in the language they were written in',
+
+  'settings.version': 'Version',
+  'settings.latest': 'latest is v{latest}',
+  'settings.upToDate': 'up to date',
 
   'update.available': 'An update is available (v{current} → v{latest})',
   'update.how': 'Run ! claude plugin update agent-hero, then /reload-plugins',

@@ -79,6 +79,7 @@ const sceneAtom = atom({ plugin: 'agent-hero', key: 'scene' } as const, null)
 const tabAtom = atom({ plugin: 'agent-hero', key: 'tab' } as const, 'status')
 const pageAtom = atom({ plugin: 'agent-hero', key: 'treePage' } as const, 1)
 const workingAtom = atom({ plugin: 'agent-hero', key: 'isWorking' } as const, false)
+const versionAtom = atom({ plugin: 'agent-hero', key: 'version' } as const, null)
 const updateAtom = atom({ plugin: 'agent-hero', key: 'update' } as const, null)
 
 // 並び順がそのまま数字キー (1〜9) の割り当てになる
@@ -104,6 +105,7 @@ type UpdateCache = { checkedAt: number; latest: string }
 async function checkUpdate($: EngineInterface) {
   const manifest = parse<{ version?: string; repository?: string }>(await $.fs.read(`${$.plugin.root}/.claude-plugin/plugin.json`))
   const current = manifest?.version
+  if (current && (await read($, versionAtom)) !== current) await update($, versionAtom, () => current)
   const url = manifestUrl(manifest?.repository)
   if (!current || !url) return
   const path = `${dataDir($.plugin.root)}/update.json`
@@ -541,6 +543,7 @@ export const register: Register = on => {
     const available = availableNodes(save, page)
 
     const tab = await read($, tabAtom)
+    const newVersion = await read($, updateAtom)
     const room = Math.max(3, (e.viewport?.rows ?? 24) - 6)
 
     // タブは 2 段に並べる
@@ -868,6 +871,14 @@ export const register: Register = on => {
             ))}
           </Box>
           <Text dimColor>{t(lang, 'settings.languageNote')}</Text>
+          <Box flexDirection="column" marginTop={1}>
+            <Text>
+              <Text bold>{t(lang, 'settings.version')}</Text>
+              {`  v${(await read($, versionAtom)) ?? '?'}`}
+              {newVersion ? <Text color="#ffd700">{`  (${t(lang, 'settings.latest', { latest: newVersion.latest })})`}</Text> : <Text dimColor>{`  (${t(lang, 'settings.upToDate')})`}</Text>}
+            </Text>
+            {newVersion && <Text dimColor>{t(lang, 'update.how')}</Text>}
+          </Box>
         </Box>
       ) : (
         <Box flexDirection="column">
@@ -877,7 +888,6 @@ export const register: Register = on => {
         </Box>
       )
 
-    const newVersion = await read($, updateAtom)
     return (
       <Box flexDirection="column" gap={1}>
         {newVersion && (
