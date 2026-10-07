@@ -202,9 +202,11 @@ export const BALANCE = {
   // 強化 (強化ツリー)
   tree: {
     pages: 10,
-    // 各ページの起点の効果。ページが開いていれば、取得の操作なしで効く。
+    // T1 の起点の効果。ページが開いていれば、取得の操作なしで効く。
     // T2 以降の起点は、これに加えてトークン倍率を economy.tokenMultiplierPerPage 倍にする効果を持つ (tree.ts の startMods)
-    startMods: { 1: { hpFlat: 50, atkFlat: 5, defFlat: 5 } } as Record<number, Record<string, number>>,
+    startMods: { hpFlat: 50, atkFlat: 5, defFlat: 5 } as Record<string, number>,
+    // T(n) の起点の効果 = startMods × startGrowth ^ (n − 1)。0 にすると T2 以降の起点はトークン倍率だけになる
+    startGrowth: 0,
     // 費用 = baseCost × pageCostMult ^ (T − 1) × (そのページでの購入回数 + 1) ^ costExponent
     baseCost: 300,
     pageCostMult: 2,

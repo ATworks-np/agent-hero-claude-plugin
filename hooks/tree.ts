@@ -378,11 +378,15 @@ export const MAX_NODE_LEVEL = BALANCE.tree.maxNodeLevel
 export const nodeLevel = (save: Save, id: string): number =>
   save.allocated.includes(id) ? Math.max(1, save.nodeLevels?.[id] ?? 1) : 0
 // Lv をかけた効果の説明
-// 起点の効果。T1 は config の startMods、T2 以降はトークン倍率を tokenMultiplierPerPage 倍にする効果
-export const startMods = (tier: number): Record<string, number> => ({
-  ...(BALANCE.tree.startMods[tier] ?? {}),
-  ...(tier > 1 ? { tokenMultX: BALANCE.economy.tokenMultiplierPerPage } : {}),
-})
+// 起点の効果。T1 の値 (config の startMods) をページごとに startGrowth 倍していき、T2 以降はトークン倍率を
+// tokenMultiplierPerPage 倍にする効果も持つ
+export const startMods = (tier: number): Record<string, number> => {
+  const scale = tier === 1 ? 1 : BALANCE.tree.startGrowth ** (tier - 1)
+  const stats = Object.fromEntries(
+    Object.entries(BALANCE.tree.startMods).map(([key, value]) => [key, Math.round(value * scale)]).filter(([, value]) => value !== 0),
+  )
+  return { ...stats, ...(tier > 1 ? { tokenMultX: BALANCE.economy.tokenMultiplierPerPage } : {}) }
+}
 
 export const nodeText = (node: TreeNode, level: number, lang: Lang = 'ja'): string => {
   if (node.size === 'point') return t(lang, 'tree.spNode')
