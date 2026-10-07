@@ -55,6 +55,7 @@ import type { SkillBranch, SkillNode } from './skills'
 import type { SkillViewMessage, SkillViewProps } from './skill-view'
 import type { MapViewMessage, MapViewProps } from './map-view'
 import { advance, applyInboxes, isDriver, newWorld } from './world'
+import { isNewer, manifestUrl } from './update'
 
 const PANE = 'agent-hero'
 const TREE_VIEW = 'tree-view'
@@ -68,12 +69,17 @@ const HEARTBEAT_MS = 1000
 // 更新がこれより古い受信箱は、取り込み済みとして読まない
 const INBOX_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const CMD_CAP = 20
+// 新しい版が出ているかを GitHub に確かめる間隔。結果は共有データに置き、全セッションで使い回す
+const UPDATE_CHECK_MS = 6 * 60 * 60 * 1000
+// 確かめた結果を読み直す間隔 (通信はしない)
+const UPDATE_READ_MS = 10 * 60 * 1000
 
 const saveAtom = atom({ plugin: 'agent-hero', key: 'save' } as const, null)
 const sceneAtom = atom({ plugin: 'agent-hero', key: 'scene' } as const, null)
 const tabAtom = atom({ plugin: 'agent-hero', key: 'tab' } as const, 'status')
 const pageAtom = atom({ plugin: 'agent-hero', key: 'treePage' } as const, 1)
 const workingAtom = atom({ plugin: 'agent-hero', key: 'isWorking' } as const, false)
+const updateAtom = atom({ plugin: 'agent-hero', key: 'update' } as const, null)
 
 // 並び順がそのまま数字キー (1〜9) の割り当てになる
 const TABS: Tab[] = ['status', 'tree', 'skill', 'relic', 'equipment', 'inventory', 'log', 'map', 'settings']
@@ -89,6 +95,33 @@ const dataDir = (root: string): string => {
   if (installed) return `${installed[1]}/agent-hero`
   const home = /^\/(?:Users|home)\/[^/]+/.exec(root)
   return home ? `${home[0]}/.claude/agent-hero` : `${root}/data`
+}
+
+type UpdateCache = { checkedAt: number; latest: string }
+
+// 動いている版と、公開している最新の版を比べる。GitHub に確かめるのは前回から UPDATE_CHECK_MS 経ったときだけ。
+// 新しい版を見つけたセッションだけがトーストを出す (全セッションで同時に出さないため)
+async function checkUpdate($: EngineInterface) {
+  const manifest = parse<{ version?: string; repository?: string }>(await $.fs.read(`${$.plugin.root}/.claude-plugin/plugin.json`))
+  const current = manifest?.version
+  const url = manifestUrl(manifest?.repository)
+  if (!current || !url) return
+  const path = `${dataDir($.plugin.root)}/update.json`
+  const now = await $.clock.now()
+  let cache = (await $.fs.exists(path)) ? parse<UpdateCache>(await $.fs.read(path)) : null
+  if (!cache || now - cache.checkedAt >= UPDATE_CHECK_MS) {
+    const response = await $.http.fetch(url).catch(() => null)
+    const fetched = response?.ok ? parse<{ version?: string }>(response.text)?.version : undefined
+    // 取れなかったときも確かめた時刻は進め、次の確認まで通信しない
+    const next: UpdateCache = { checkedAt: now, latest: fetched ?? cache?.latest ?? current }
+    if (fetched && fetched !== cache?.latest && isNewer(fetched, current)) {
+      $.ui.toast(t(langOf(await read($, saveAtom)), 'update.available', { current, latest: fetched }))
+    }
+    cache = next
+    await $.fs.write(path, JSON.stringify(cache))
+  }
+  const info = isNewer(cache.latest, current) ? { current, latest: cache.latest } : null
+  if (JSON.stringify(await read($, updateAtom)) !== JSON.stringify(info)) await update($, updateAtom, () => info)
 }
 
 const parse = <T,>(text: string): T | null => {
@@ -325,6 +358,8 @@ export const register: Register = on => {
       description: t(langOf(await read($, saveAtom)), 'command.description'),
     })
     $.clock.every(TICK_MS, () => void tick($, ctx))
+    await checkUpdate($).catch(() => undefined)
+    $.clock.every(UPDATE_READ_MS, () => void checkUpdate($).catch(() => undefined))
 
     return next(e)
   })
@@ -407,6 +442,7 @@ export const register: Register = on => {
     const scene = await read($, sceneAtom)
     if (!save || !scene) return next(e)
     const isWorking = await read($, workingAtom)
+    const newVersion = await read($, updateAtom)
 
     const { Box, Text } = $.ui.resolve(e)
     const top = maxHp(save)
@@ -430,6 +466,7 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column" alignItems="flex-end" width={e.props.bodyColumns}>
         <Box flexDirection="row">
+          {newVersion && <Text color="#ffd700" bold>{`⬆ ${t(lang, 'band.update')}  `}</Text>}
           {/* セット枠 3 つ分の待ち時間を 5 マスのバーで出す。満タンで使える状態。枠が空いていれば空のバー */}
           {Array.from({ length: SKILL_SLOTS }, (_, slot) => {
             const id = equipped(save)[slot]
@@ -834,8 +871,15 @@ export const register: Register = on => {
         </Box>
       )
 
+    const newVersion = await read($, updateAtom)
     return (
       <Box flexDirection="column" gap={1}>
+        {newVersion && (
+          <Box flexDirection="column">
+            <Text bold color="#ffd700">{`⬆ ${t(lang, 'update.available', newVersion)}`}</Text>
+            <Text dimColor>{t(lang, 'update.how')}</Text>
+          </Box>
+        )}
         {tabs}
         {body}
       </Box>

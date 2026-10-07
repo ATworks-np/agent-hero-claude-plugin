@@ -3,13 +3,15 @@ import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
 const SURFACES = ['terminal', 'desktop'] as const
-const start = async ($: Engine, on: On) => {
+const MANIFEST = JSON.stringify({ name: 'agent-hero', version: '0.1.0', repository: 'https://github.com/owner/repo' })
+const start = async ($: Engine, on: On, latest = '0.1.0') => {
+  on('http.fetch', () => ({ value: { status: 200, ok: true, headers: {}, text: JSON.stringify({ version: latest }) } }))
   on('command.register', () => ({ value: { command: 'agent-hero' } }))
   const files = new Map<string, string>()
   on('store.get', () => ({ value: undefined }))
   on('clock.now', () => ({ value: 1_000_000 }))
   on('fs.exists', (_, e) => ({ value: files.has(e.path) || [...files.keys()].some(path => path.startsWith(`${e.path}/`)) }))
-  on('fs.read', (_, e) => ({ value: files.get(e.path) ?? '' }))
+  on('fs.read', (_, e) => ({ value: files.get(e.path) ?? (e.path.endsWith('/.claude-plugin/plugin.json') ? MANIFEST : '') }))
   on('fs.write', (_, e) => {
     files.set(e.path, e.text)
     return { value: undefined }
@@ -138,4 +140,37 @@ test('設定のタブで言語のボタンが出る', async ($, on) => {
   expect(await pane.find({ key: 'lang-en' })).toBeDefined()
   expect(await pane.find({ key: 'lang-ja' })).toBeDefined()
   await pane.unmount()
+})
+
+test('GitHub に新しい版があれば、帯とペインにアップデートがあると出る', async ($, on) => {
+  await start($, on, '0.2.0')
+  const band = await $.ui.mount({
+    plugin: 'agent-hero',
+    surface: 'terminal',
+    component: 'AbovePrompt',
+    props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 100, scroll, view: {} },
+  })
+  expect(await band.find({ text: '⬆ 更新あり  ' })).toBeDefined()
+  await band.unmount()
+  const pane = await $.ui.mount({
+    plugin: 'agent-hero',
+    surface: 'terminal',
+    component: 'Pane',
+    requestId: 'agent-hero',
+    props: { title: 'Agent Hero', isFocused: true, bodyColumns: 60, placement: 'dock', scroll, view: {} },
+  })
+  expect(await pane.find({ text: '⬆ アップデートがあります (v0.1.0 → v0.2.0)' })).toBeDefined()
+  await pane.unmount()
+})
+
+test('最新の版で動いていれば、アップデートの表示は出ない', async ($, on) => {
+  await start($, on, '0.1.0')
+  const band = await $.ui.mount({
+    plugin: 'agent-hero',
+    surface: 'terminal',
+    component: 'AbovePrompt',
+    props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 100, scroll, view: {} },
+  })
+  expect(await band.find({ text: '⬆ 更新あり  ' })).toBeUndefined()
+  await band.unmount()
 })

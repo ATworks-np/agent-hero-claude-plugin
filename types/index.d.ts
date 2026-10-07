@@ -137,6 +137,14 @@ export type Tab = 'status' | 'tree' | 'skill' | 'relic' | 'equipment' | 'invento
 
 declare module 'claude-code' {
   interface PluginState {
-    'agent-hero': { save: Save | null; scene: Scene | null; tab: Tab; isWorking: boolean; treePage: number }
+    'agent-hero': {
+      save: Save | null
+      scene: Scene | null
+      tab: Tab
+      isWorking: boolean
+      treePage: number
+      // 新しい版が出ていれば、動いている版と最新の版
+      update: { current: string; latest: string } | null
+    }
   }
 }
