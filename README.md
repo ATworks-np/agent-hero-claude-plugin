@@ -23,7 +23,7 @@ English is available too. Switch the language in the Settings tab.
 Claude Code のプロンプトで次の 1 行を実行してください。
 
 ```
-/plugin install agent-hero --marketplace ATworks-np/agent-hero
+/plugin install agent-hero --marketplace ATworks-np/agent-hero-claude-plugin
 ```
 
 マーケットプレイスを追加するか聞かれたら `y` と答え、インストール先のスコープを選びます。ユーザースコープを選ぶと、すべてのプロジェクトで勇者が動きます。インストールが終わると、そのセッションですぐに動き始めます。
