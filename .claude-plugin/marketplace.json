@@ -1,7 +1,7 @@
 {
   "name": "agent-hero",
   "owner": {
-    "name": "atworks-np"
+    "name": "Atomin"
   },
   "description": "Agent Hero: an idle dungeon RPG that lives above the Claude Code prompt.",
   "plugins": [
