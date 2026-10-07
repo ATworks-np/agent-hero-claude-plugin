@@ -93,7 +93,7 @@ test('強化ツリーはページをクリックで切り替え (選択中は反
   // 最上段の ' T1 ' ' T2 ' … のうち T2 (5〜8 列目) をクリックする
   await pane.pointer({ type: 'down', button: 'left', x: 5, y: 0, in: 'tree-view' })
   expect(await text()).toContain('T2 のツリー')
-  expect(await text()).toContain('足りない: T1')
+  expect(await text()).toContain('足りないもの: T1')
   await pane.pointer({ type: 'down', button: 'left', x: 1, y: 0, in: 'tree-view' })
   expect(await text()).not.toContain('T2 のページは')
   // 最初のカーソルは起点の隣の取得できるノード。上下左右で盤面を移動できる
@@ -233,7 +233,7 @@ test('設定タブでセーブデータをリセットすると、確認のあ�
   await pane.press({ key: 'tab-settings' })
   expect(await pane.find({ text: '利用規約' })).toBeDefined()
   expect(await pane.find({ text: '・これは開発版です' })).toBeDefined()
-  expect(await pane.find({ text: '・外部への送信: しない。トークン数を含め、読み取った情報も進行もどこにも送信しない' })).toBeDefined()
+  expect(await pane.find({ text: '・外部への送信: しません。トークン数を含め、読み取った情報も進行もどこにも送信しません' })).toBeDefined()
   await pane.press({ key: 'reset' })
   expect(await pane.find({ key: 'reset-cancel' })).toBeDefined()
   await pane.press({ key: 'reset-cancel' })
