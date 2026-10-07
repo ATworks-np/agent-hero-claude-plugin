@@ -14,6 +14,8 @@ export const BALANCE = {
     tokenMultiplierPerPage: 2,
     // 分解でもらえる memory は、鍛錬の 1 回あたりの基本の費用にこの割合を掛けた量
     salvageRatio: 0.25,
+    // 敵を倒したときにもらえる memory = (base + perFloor × 階) × 敵の種類の倍率。トークンから得る量に比べてわずか
+    killMemory: { base: 0.2, perFloor: 0.05, miniboss: 5, boss: 20 },
   },
 
   // 勇者

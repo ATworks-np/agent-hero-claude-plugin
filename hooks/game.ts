@@ -848,13 +848,24 @@ const monsterTurn = (save: Save, scene: Scene, monster: Monster, frame: number, 
   return { save: next, scene: { ...scene, frame, phase: 'dead', wait: BALANCE.dungeon.deathWait, hit: null, flash: undefined }, notes }
 }
 
+// 敵を倒したときにもらえる memory。深い階ほど、ミニボス・ボスほど多い
+export const killMemory = (floor: number, monster: Pick<Monster, 'isBoss' | 'isMiniBoss'>): number => {
+  const k = BALANCE.economy.killMemory
+  const mult = monster.isBoss ? k.boss : monster.isMiniBoss ? k.miniboss : 1
+  return Math.round((k.base + k.perFloor * floor) * mult * 10) / 10
+}
+
 // 敵を倒したあとの処理: 討伐数とドロップ。倒したときに効くパッシブとスキルの効果もここで使い切る
 const defeat = (save: Save, scene: Scene, monster: Monster, frame: number, rng: Rng, notes: Note[]): StepResult => {
   const km = mods(save)
   const b = save.buffs ?? {}
   const top = maxHp(save)
   const hp = km.firstaid > 0 ? Math.min(top, save.hp + Math.ceil(top * km.firstaid)) : save.hp
-  let next = addLog({ ...save, hp, kills: save.kills + 1 }, say(save, 'log.killed', { monster: monsterName(monster, langOf(save)) }))
+  const gain = killMemory(save.floor, monster)
+  let next = addLog(
+    { ...save, hp, kills: save.kills + 1, memory: save.memory + gain },
+    say(save, 'log.killed', { monster: monsterName(monster, langOf(save)), gain }),
+  )
   if (monster.isBoss) notes.push({ kind: 'boss', text: say(save, 'note.bossKilled', { monster: monsterName(monster, langOf(save)) }) })
   // ボスはまれに遺物を落とす。付与の数はそのボスの階の Tier で決まる
   if (monster.isBoss && rng() < BALANCE.relic.dropRate) {

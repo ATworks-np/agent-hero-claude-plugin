@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { CORRIDOR, QUALITIES, TOKENS_PER_MEMORY, floorFeature, floorTheme, roomsOn, autoExplore, farm, tokenMultiplier, allocate, ratioDamage, defense, salvageAll, salvageValue, forge, forgeCost, forgeRate, refund, populate, attack, displayName, itemName, monsterName, gainTokens, makeEquipment, maxHp, migrate, newSave, newScene, spawn, spawnBoss, spawnMiniBoss, step, tierOf, weightedTokens } from '../hooks/game'
+import { CORRIDOR, QUALITIES, TOKENS_PER_MEMORY, floorFeature, floorTheme, roomsOn, autoExplore, farm, tokenMultiplier, allocate, ratioDamage, defense, salvageAll, salvageValue, forge, forgeCost, forgeRate, refund, populate, attack, displayName, itemName, monsterName, gainTokens, makeEquipment, maxHp, migrate, newSave, newScene, spawn, spawnBoss, spawnMiniBoss, killMemory, step, tierOf, weightedTokens } from '../hooks/game'
 import { makeRelic, relicName } from '../hooks/relics'
 import { PAGES, TREE_NODES, canAffordUpgrade, nodeText, availableNodes, formatAmount, isStart, modLines, mods, nodeCost, unlockedPages } from '../hooks/tree'
 import type { Save } from '../types'
@@ -126,7 +126,7 @@ test('階は 5 部屋あり、敵は各部屋の決まった位置に並び、�
   expect(save.hp).toBe(maxHp(save))
 })
 
-test('敵と遭遇すると戦闘し、倒すと討伐数が増える。敵を倒しても memory は増えない', async () => {
+test('敵と遭遇すると戦闘し、倒すと討伐数が増え、少し memory が手に入る', async () => {
   let save = newSave()
   let scene = newScene()
   let calls = 0
@@ -137,7 +137,8 @@ test('敵と遭遇すると戦闘し、倒すと討伐数が増える。敵を�
     scene = r.scene
   }
   expect(save.kills).toBe(1)
-  expect(save.memory).toBe(0)
+  expect(save.memory).toBe(killMemory(1, { isBoss: false }))
+  expect(save.memory > 0).toBe(true)
 })
 
 test('敵は 10 階ごとに Tier が上がり、名前の T 番号が上がる', async () => {
