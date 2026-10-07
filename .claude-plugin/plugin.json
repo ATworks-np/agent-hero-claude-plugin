@@ -1,6 +1,6 @@
 {
   "name": "agent-hero",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A hero auto-crawls a dungeon above the prompt, powered by the tokens you spend. /agent-hero opens upgrades, skills, gear and the map.",
   "types": "./types/index.d.ts",
   "license": "MIT",

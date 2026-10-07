@@ -122,9 +122,9 @@ const SkillView: ClientModule<SkillViewProps, State> = (props, surface) => {
               <Text color={props.sp >= selected.upgradeCost ? '#afffaf' : '#ff8787'}>{t(props.lang, 'skill.upgradeCost', { cost: selected.upgradeCost })}</Text>
             </Text>
           )}
-          <Text dimColor>
-            {selected.state === 'learned' && isFull ? t(props.lang, 'skill.full', { slots: props.slots }) : t(props.lang, `skill.action.${selected.state}`)}
-          </Text>
+          {/* 操作は下の説明に書いてあるので、操作できない理由だけを出す */}
+          {selected.state === 'learned' && isFull && <Text dimColor>{t(props.lang, 'skill.full', { slots: props.slots })}</Text>}
+          {selected.state === 'locked' && <Text dimColor>{t(props.lang, 'skill.action.locked')}</Text>}
         </Box>
       )}
       <Text dimColor>{t(props.lang, 'skill.help')}</Text>
