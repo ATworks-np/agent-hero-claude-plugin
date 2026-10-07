@@ -329,12 +329,10 @@ const skillViewProps = (save: Save): SkillViewProps => {
       }
     }),
     sp,
-    earnedSp: skillPoints(save),
     maxLevel: MAX_SKILL_LEVEL,
     slots: SKILL_SLOTS,
     equippedCount: equipped(save).length,
-    learnedCount: learned(save).length,
-    equippedNames: equipped(save).map(id => `${SKILLS.get(id) ? skillName(SKILLS.get(id)!, lang) : id} Lv${levelOf(save, id)}`),
+    equippedNames: equipped(save).map(id => (SKILLS.get(id) ? skillName(SKILLS.get(id)!, lang) : id)),
   }
 }
 
@@ -760,7 +758,7 @@ export const register: Register = on => {
         <Box flexDirection="column">
           <Text>
             SP <Text color="#d787ff">{freeSp(save, skillPoints(save))}</Text>
-            {`  ${t(lang, 'skill.header', { equipped: equipped(save).length, slots: SKILL_SLOTS, learned: learned(save).length, total: SKILLS.size })}`}
+            {`  ${t(lang, 'skill.header', { equipped: equipped(save).length, slots: SKILL_SLOTS })}`}
           </Text>
           <Box flexDirection="column" marginTop={1}>
             {skillCells(save).map(row => (

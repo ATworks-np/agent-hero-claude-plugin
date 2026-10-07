@@ -33,11 +33,9 @@ export type SkillViewProps = {
   rows: SkillViewCell[][]
   nodes: SkillViewNode[]
   sp: number
-  earnedSp: number
   maxLevel: number
   slots: number
   equippedCount: number
-  learnedCount: number
   equippedNames: string[]
 }
 export type SkillViewMessage = { learn: string } | { upgrade: string } | { refund: string } | { equip: string } | { unequip: string }
@@ -84,8 +82,7 @@ const SkillView: ClientModule<SkillViewProps, State> = (props, surface) => {
     <Box flexDirection="column">
       <Text>
         SP <Text color="#d787ff" bold>{props.sp}</Text>
-        <Text dimColor>{t(props.lang, 'skill.earned', { sp: props.earnedSp })}</Text>
-        {`  ${t(props.lang, 'skill.header', { equipped: props.equippedCount, slots: props.slots, learned: props.learnedCount, total: props.nodes.length })}`}
+        {`  ${t(props.lang, 'skill.header', { equipped: props.equippedCount, slots: props.slots })}`}
       </Text>
       <Text dimColor>{props.equippedNames.length === 0 ? t(props.lang, 'skill.none') : t(props.lang, 'skill.equippedList', { names: props.equippedNames.join(' / ') })}</Text>
       <Box flexDirection="column" marginTop={1}>

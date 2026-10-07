@@ -68,8 +68,7 @@ const ja = {
   'tree.spNode': 'スキルポイント +1',
 
   // スキル
-  'skill.header': 'セット中 {equipped}/{slots}  習得 {learned}/{total}',
-  'skill.earned': ' (強化で {sp} 獲得)',
+  'skill.header': 'セット中 {equipped}/{slots}',
   'skill.none': 'セット中のスキルなし',
   'skill.equippedList': 'セット中: {names}',
   'skill.state.equipped': 'セット中',
@@ -315,8 +314,7 @@ const en: Record<TextKey, string> = {
   'tree.locked': 'New nodes on T{tier} need a keystone on every earlier page (missing: {missing})',
   'tree.spNode': 'Skill points +1',
 
-  'skill.header': 'Set {equipped}/{slots}  Learned {learned}/{total}',
-  'skill.earned': ' ({sp} earned from upgrades)',
+  'skill.header': 'Set {equipped}/{slots}',
   'skill.none': 'No skills set',
   'skill.equippedList': 'Set: {names}',
   'skill.state.equipped': 'Set',
