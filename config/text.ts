@@ -26,7 +26,6 @@ const ja = {
   'band.resting': '休憩中',
   'band.farming': '周回',
   'band.power': 'PWR',
-  'band.update': '更新あり',
 
   // ステータス
   'status.hp': 'HP',
@@ -132,7 +131,7 @@ const ja = {
 
   // アップデート
   'update.available': 'アップデートがあります (v{current} → v{latest})',
-  'update.how': 'claude plugin update agent-hero を実行してから /reload-plugins で反映される',
+  'update.how': '! claude plugin update agent-hero を実行してから /reload-plugins してください',
 
   // 記録とトースト
   'log.start': '冒険が始まった',
@@ -224,7 +223,6 @@ const en: Record<TextKey, string> = {
   'band.resting': 'Resting',
   'band.farming': 'Farming',
   'band.power': 'PWR',
-  'band.update': 'Update',
 
   'status.hp': 'HP',
   'status.atk': 'Attack',
@@ -322,7 +320,7 @@ const en: Record<TextKey, string> = {
   'settings.languageNote': 'Language of the screens, log and names. Existing log lines stay in the language they were written in',
 
   'update.available': 'An update is available (v{current} → v{latest})',
-  'update.how': 'Run claude plugin update agent-hero, then /reload-plugins',
+  'update.how': 'Run ! claude plugin update agent-hero, then /reload-plugins',
 
   'log.start': 'The adventure began',
   'log.nodeLevelUp': 'Raised T{tier} {name} to Lv{level}',

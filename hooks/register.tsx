@@ -466,7 +466,6 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column" alignItems="flex-end" width={e.props.bodyColumns}>
         <Box flexDirection="row">
-          {newVersion && <Text color="#ffd700" bold>{`⬆ ${t(lang, 'band.update')}  `}</Text>}
           {/* セット枠 3 つ分の待ち時間を 5 マスのバーで出す。満タンで使える状態。枠が空いていれば空のバー */}
           {Array.from({ length: SKILL_SLOTS }, (_, slot) => {
             const id = equipped(save)[slot]
@@ -497,6 +496,13 @@ export const register: Register = on => {
           <Text color="#ff5f5f">HP {bar(save.hp, top, 6)} </Text>
           <Text color="#afffaf">{`${formatAmount(save.memory)} ${contentOf(lang).memoryName}`}</Text>
         </Box>
+        {/* 新しい版が出ているときだけ 3 行目に、更新のしかたと一緒に出す */}
+        {newVersion && (
+          <Text color="#ffd700">
+            <Text bold>{`⬆ ${t(lang, 'update.available', newVersion)}`}</Text>
+            {`  ${t(lang, 'update.how')}`}
+          </Text>
+        )}
       </Box>
     )
   })

@@ -150,7 +150,7 @@ test('GitHub に新しい版があれば、帯とペインにアップデート�
     component: 'AbovePrompt',
     props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 100, scroll, view: {} },
   })
-  expect(await band.find({ text: '⬆ 更新あり  ' })).toBeDefined()
+  expect(await band.find({ text: '⬆ アップデートがあります (v0.1.0 → v0.2.0)' })).toBeDefined()
   await band.unmount()
   const pane = await $.ui.mount({
     plugin: 'agent-hero',
@@ -171,6 +171,6 @@ test('最新の版で動いていれば、アップデートの表示は出な�
     component: 'AbovePrompt',
     props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 100, scroll, view: {} },
   })
-  expect(await band.find({ text: '⬆ 更新あり  ' })).toBeUndefined()
+  expect(await band.find({ text: '⬆ アップデートがあります (v0.1.0 → v0.1.0)' })).toBeUndefined()
   await band.unmount()
 })
