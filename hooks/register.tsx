@@ -81,12 +81,14 @@ const TABS: Tab[] = ['status', 'tree', 'skill', 'relic', 'equipment', 'inventory
 const TABS_FIRST_ROW = 5
 
 // 共有データはプラグインの外 (設定フォルダの agent-hero/。既定では ~/.claude/agent-hero/) に置き、
-// プラグインを入れ直したり更新したりしても消えないようにする。プラグインの置き場所は、マーケットプレイスから
-// 入れたものが <設定フォルダ>/plugins/ の下、スキル置き場に直接置いたものが <設定フォルダ>/skills/ の下。
-// どちらでもない (--plugin-dir で読み込んだ) ときはプラグインのフォルダの data/ に置く
+// プラグインを入れ直したり更新したりしても消えないようにする。マーケットプレイスから入れたプラグインは
+// <設定フォルダ>/plugins/cache/ などの下、スキル置き場に直接置いたものは <設定フォルダ>/skills/ の下にある。
+// どちらでもない (手元のフォルダから読み込んだ) ときは、ホームの ~/.claude/agent-hero/ に置く
 const dataDir = (root: string): string => {
-  const at = Math.max(root.lastIndexOf('/plugins/'), root.lastIndexOf('/skills/'))
-  return at >= 0 ? `${root.slice(0, at)}/agent-hero` : `${root}/data`
+  const installed = /^(.*)\/(?:plugins\/(?:cache|marketplaces)|skills)\//.exec(root)
+  if (installed) return `${installed[1]}/agent-hero`
+  const home = /^\/(?:Users|home)\/[^/]+/.exec(root)
+  return home ? `${home[0]}/.claude/agent-hero` : `${root}/data`
 }
 
 const parse = <T,>(text: string): T | null => {
