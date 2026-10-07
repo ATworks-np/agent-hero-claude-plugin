@@ -55,7 +55,7 @@ import {
 import type { SkillBranch, SkillNode } from './skills'
 import type { SkillViewMessage, SkillViewProps } from './skill-view'
 import type { MapViewMessage, MapViewProps } from './map-view'
-import { advance, applyInboxes, isDriver, newWorld } from './world'
+import { NOTE_KINDS, advance, applyInboxes, isDriver, isNotifyOn, newWorld } from './world'
 import { isNewer, manifestUrl } from './update'
 
 const PANE = 'agent-hero'
@@ -89,9 +89,8 @@ const updateAtom = atom({ plugin: 'agent-hero', key: 'update' } as const, null)
 const TABS: Tab[] = ['status', 'tree', 'skill', 'relic', 'equipment', 'inventory', 'log', 'map', 'settings']
 // タブを 2 段に並べるときの 1 段目の数
 const TABS_FIRST_ROW = 5
-// 設定タブの項目と、通知の種類 (設定タブに並べる順)
+// 設定タブの項目
 const SETTINGS_SECTIONS = ['language', 'notify', 'version', 'terms', 'data'] as const
-const NOTE_KINDS: NoteKind[] = ['floor', 'boss', 'death', 'loot', 'forge', 'update']
 
 // 共有データはプラグインの外 (設定フォルダの agent-hero/。既定では ~/.claude/agent-hero/) に置き、
 // プラグインを入れ直したり更新したりしても消えないようにする。マーケットプレイスから入れたプラグインは
@@ -123,7 +122,7 @@ async function checkUpdate($: EngineInterface) {
     // 取れなかったときも確かめた時刻は進め、次の確認まで通信しない
     const next: UpdateCache = { checkedAt: now, latest: fetched ?? cache?.latest ?? current }
     const save = await read($, saveAtom)
-    if (fetched && fetched !== cache?.latest && isNewer(fetched, current) && save?.notify?.update !== false) {
+    if (fetched && fetched !== cache?.latest && isNewer(fetched, current) && isNotifyOn(save, 'update')) {
       $.ui.toast(t(langOf(save), 'update.available', { current, latest: fetched }))
     }
     cache = next
@@ -258,7 +257,7 @@ async function tick($: EngineInterface, ctx: Ctx) {
   // 起動時点までの出来事は通知せず、それ以降に起きた出来事だけを全セッションでトーストする
   if (ctx.lastEvent !== null) {
     for (const event of shown.events) {
-      if (event.seq > ctx.lastEvent && (!event.kind || shown.save.notify?.[event.kind] !== false)) $.ui.toast(event.text)
+      if (event.seq > ctx.lastEvent && isNotifyOn(shown.save, event.kind)) $.ui.toast(event.text)
     }
   }
   ctx.lastEvent = shown.eventSeq
@@ -985,8 +984,12 @@ export const register: Register = on => {
             </Box>
           ) : section === 'notify' ? (
             <Box flexDirection="column">
+              <Box flexDirection="row" gap={2} marginBottom={1}>
+                <Button key="notify-all-on" label={t(lang, 'settings.notifyAllOn')} plain dimColor={NOTE_KINDS.every(kind => isNotifyOn(save, kind))} onPress={() => sendCommand($, ctx, { notifyAll: true })} />
+                <Button key="notify-all-off" label={t(lang, 'settings.notifyAllOff')} plain dimColor={NOTE_KINDS.every(kind => !isNotifyOn(save, kind))} onPress={() => sendCommand($, ctx, { notifyAll: false })} />
+              </Box>
               {NOTE_KINDS.map(kind => {
-                const isOn = save.notify?.[kind] !== false
+                const isOn = isNotifyOn(save, kind)
                 return (
                   <Box flexDirection="row" gap={1}>
                     <Button

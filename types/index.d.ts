@@ -38,7 +38,7 @@ export type Save = {
   nextId: number
   // 画面・記録・名前の言語。無ければ日本語
   lang?: 'ja' | 'en'
-  // 通知の種類ごとの出す・出さない。書かれていない種類は出す
+  // 通知の種類ごとの出す・出さない。書かれていない種類は初期値 (アップデートだけオン) に従う
   notify?: Partial<Record<NoteKind, boolean>>
   // いるダンジョンの ID (config/content.ts の dungeons)。無ければ先頭のダンジョン
   dungeon?: string
@@ -121,7 +121,7 @@ export type Scene = {
   flash?: string
 }
 
-export type Command = { seq: number; equip?: string; allocate?: string; refund?: string; forge?: ItemKind; salvageAll?: true; learnSkill?: string; equipSkill?: string; unequipSkill?: string; upgradeSkill?: string; refundSkill?: string; equipRelic?: string; unequipRelic?: string; discardRelic?: string; farm?: number; auto?: true; lang?: 'ja' | 'en'; reset?: true; notify?: { kind: NoteKind; on: boolean } }
+export type Command = { seq: number; equip?: string; allocate?: string; refund?: string; forge?: ItemKind; salvageAll?: true; learnSkill?: string; equipSkill?: string; unequipSkill?: string; upgradeSkill?: string; refundSkill?: string; equipRelic?: string; unequipRelic?: string; discardRelic?: string; farm?: number; auto?: true; lang?: 'ja' | 'en'; reset?: true; notify?: { kind: NoteKind; on: boolean }; notifyAll?: boolean }
 
 export type Inbox = {
   tokens: number
@@ -140,7 +140,7 @@ export type World = {
   driver: { id: string; at: number } | null
   applied: Record<string, { tokens: number; cmd: number }>
   isWorking: boolean
-  // kind の無いものは旧形式の出来事で、通知の設定によらず出す
+  // kind の無いものは旧形式の出来事で、通知には出さない
   events: { seq: number; text: string; kind?: NoteKind }[]
   eventSeq: number
 }

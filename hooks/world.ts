@@ -1,4 +1,4 @@
-import type { Inbox, Note, World } from '../types'
+import type { Inbox, Note, NoteKind, World } from '../types'
 import { allocate, autoExplore, displayName, equip, farm, forge, refund, salvageAll, gainTokens, migrate, newSave, newScene, step } from './game'
 import type { Rng } from './game'
 import { equipSkill, learnSkill, refundSkill, unequipSkill, upgradeSkill } from './skills'
@@ -19,6 +19,14 @@ export const DRIVER_STALE_MS = 2000
 // 受信箱の作業中の印がこれより新しいセッションがあれば、帯に「探索中」と出す
 export const WORKING_STALE_MS = 3000
 const EVENT_CAP = 20
+
+// 通知の種類 (設定タブに並べる順)
+export const NOTE_KINDS: NoteKind[] = ['floor', 'boss', 'death', 'loot', 'forge', 'update']
+
+// 通知は、設定でオンにした種類だけ出す。まだ選んでいない種類は初期値に従い、初期値でオンなのはアップデートだけ
+const NOTIFY_DEFAULTS: Record<NoteKind, boolean> = { floor: false, boss: false, death: false, loot: false, forge: false, update: true }
+export const isNotifyOn = (save: { notify?: Partial<Record<NoteKind, boolean>> } | null | undefined, kind: NoteKind | undefined): boolean =>
+  kind !== undefined && (save?.notify?.[kind] ?? NOTIFY_DEFAULTS[kind])
 
 export const newWorld = (save = newSave()): World => ({
   save: migrate(save),
@@ -56,6 +64,7 @@ export const applyInboxes = (world: World, inboxes: Record<string, Inbox>, now: 
       if (cmd.reset) resetRequested = true
       if (cmd.lang) save = { ...save, lang: cmd.lang }
       if (cmd.notify) save = { ...save, notify: { ...save.notify, [cmd.notify.kind]: cmd.notify.on } }
+      if (cmd.notifyAll !== undefined) save = { ...save, notify: Object.fromEntries(NOTE_KINDS.map(kind => [kind, cmd.notifyAll])) }
       if (cmd.equip) save = equip(save, cmd.equip)
       if (cmd.allocate) save = allocate(save, cmd.allocate)
       if (cmd.refund) save = refund(save, cmd.refund)
