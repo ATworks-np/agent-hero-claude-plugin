@@ -140,7 +140,7 @@ export const BALANCE = {
   // 装備
   equipment: {
     // 装備を落とすのはミニボスとボスだけ。ミニボスが落とす確率 (ボスは必ず落とす)
-    minibossDropRate: 0.8,
+    minibossDropRate: 0.5,
     // 性能 = (Tier × perTier + base + 階の深さの分 + 0〜roll−1) × 品質の倍率
     weapon: { perTier: 15, base: 2, depthDivisor: 2, roll: 5 },
     armor: { perTier: 10, base: 1, depthDivisor: 3, roll: 3 },
