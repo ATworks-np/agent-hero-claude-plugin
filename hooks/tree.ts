@@ -14,6 +14,8 @@ import type { Lang } from './i18n'
 // キーストーンを戻すと、それより後のページは取ってあるノードを残したまま、新しくは取れなくなる。
 
 export type Mods = {
+  // トークン倍率の掛け算の部分。T2 以降の起点が 1 つにつき economy.tokenMultiplierPerPage 倍する (遺物の tokenMult は足し算)
+  tokenMultX: number
   atkFlat: number
   atkPct: number
   defFlat: number
@@ -98,6 +100,7 @@ export const modLines = (m: Partial<Mods>, lang: Lang = 'ja'): string[] => {
   const line = (key: Parameters<typeof t>[1], v: number | string, extra: Record<string, string | number> = {}) =>
     parts.push(t(lang, key, { v, ...extra }))
   const combat = BALANCE.combat
+  if (m.tokenMultX !== undefined && m.tokenMultX !== 1) line('mod.tokenMultX', Math.round(m.tokenMultX * 100) / 100)
   if (m.atkFlat) parts.push(`${signed(t(lang, 'mod.atk'), m.atkFlat)}${m.atkFlat}`)
   if (m.atkPct) parts.push(`${signed(t(lang, 'mod.atk'), m.atkPct)}${pct(m.atkPct)}`)
   if (m.defFlat) parts.push(`${signed(t(lang, 'mod.def'), m.defFlat)}${m.defFlat}`)
@@ -375,8 +378,16 @@ export const MAX_NODE_LEVEL = BALANCE.tree.maxNodeLevel
 export const nodeLevel = (save: Save, id: string): number =>
   save.allocated.includes(id) ? Math.max(1, save.nodeLevels?.[id] ?? 1) : 0
 // Lv をかけた効果の説明
+// 起点の効果。T1 は config の startMods、T2 以降はトークン倍率を tokenMultiplierPerPage 倍にする効果
+export const startMods = (tier: number): Record<string, number> => ({
+  ...(BALANCE.tree.startMods[tier] ?? {}),
+  ...(tier > 1 ? { tokenMultX: BALANCE.economy.tokenMultiplierPerPage } : {}),
+})
+
 export const nodeText = (node: TreeNode, level: number, lang: Lang = 'ja'): string => {
   if (node.size === 'point') return t(lang, 'tree.spNode')
+  // 起点は取得しなくても、ページが開いていれば効く
+  if (isStart(node.id)) return describeMods(startMods(node.tier) as Partial<Mods>, lang)
   const times = node.size === 'small' ? Math.max(1, level) : 1
   const scaled: Partial<Mods> = {}
   for (const [key, value] of Object.entries(node.mods) as [keyof Mods, number | boolean][]) {
@@ -424,11 +435,18 @@ export const mods = (save: Save): Mods => {
 
 const computeMods = (save: Save): Mods => {
   const total: Mods = {
+    tokenMultX: 1,
     atkFlat: 0, atkPct: 0, defFlat: 0, defPct: 0, hpFlat: 0, hpPct: 0, crit: 0,
     lifesteal: 0, regen: 0, dropRate: 0, qualityUp: 0, bossDmg: 0, luck: false, noRegen: false,
     powerHit: 0, double: 0, execute: 0, bleed: 0, parry: 0, will: 0, counter: 0, thorns: 0, bulwark: 0,
     firstaid: 0, desperate: 0, undying: false, smith: 0, salvager: 0, luckChance: 0,
     tokenMult: 0, spBonus: 0,
+  }
+  for (let tier = 1; tier <= unlockedPages(save); tier++) {
+    for (const [key, value] of Object.entries(startMods(tier))) {
+      if (key === 'tokenMultX') total.tokenMultX *= value
+      else (total[key as keyof Mods] as number) += value
+    }
   }
   for (const id of save.allocated) {
     const node = TREE_NODES.get(id)

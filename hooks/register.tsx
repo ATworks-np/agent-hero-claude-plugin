@@ -675,10 +675,6 @@ export const register: Register = on => {
             {label(MEMORY)}<Text color="#afffaf">{formatAmount(memory)}</Text>
           </Text>
           <Text>
-            {label(t(lang, 'status.tokenMultiplier'))}<Text bold color="#afffaf">×{tokenMultiplier(save)}</Text>{'  '}
-            <Text dimColor>{t(lang, 'status.tokenMultiplierNote', { mult: BALANCE.economy.tokenMultiplierPerPage })}</Text>
-          </Text>
-          <Text>
             {label(t(lang, 'status.power'))}<Text bold color="#ffaf5f">{formatAmount(save.spent ?? 0)}</Text>  <Text dimColor>{t(lang, 'status.powerNote')}</Text>
           </Text>
           <Text>

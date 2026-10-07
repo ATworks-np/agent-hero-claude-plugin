@@ -18,9 +18,9 @@ export const BALANCE = {
 
   // 勇者
   hero: {
-    // 強化で伸ばす前の最大 HP・攻撃力・防御力
-    baseHp: 50,
-    baseAtk: 4,
+    // 強化で伸ばす前の最大 HP・攻撃力・防御力。冒険を始めたときの値は、これに T1 の起点の効果 (tree.startMods) を足したもの
+    baseHp: 1,
+    baseAtk: 1,
     baseDef: 1,
     // 攻撃力・防御力の割合の増減を合計しても、元の値にこの倍率より下げない (キーストーンのマイナスが積み重なっても詰まないように)
     minPctScale: 0.25,
@@ -202,6 +202,9 @@ export const BALANCE = {
   // 強化 (強化ツリー)
   tree: {
     pages: 10,
+    // 各ページの起点の効果。ページが開いていれば、取得の操作なしで効く。
+    // T2 以降の起点は、これに加えてトークン倍率を economy.tokenMultiplierPerPage 倍にする効果を持つ (tree.ts の startMods)
+    startMods: { 1: { hpFlat: 50, atkFlat: 5, defFlat: 5 } } as Record<number, Record<string, number>>,
     // 費用 = baseCost × pageCostMult ^ (T − 1) × (そのページでの購入回数 + 1) ^ costExponent
     baseCost: 300,
     pageCostMult: 2,

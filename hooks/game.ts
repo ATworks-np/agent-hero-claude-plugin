@@ -6,7 +6,7 @@ import type { Lang } from './i18n'
 import { addRelic, makeRelic, relicName } from './relics'
 import { SKILLS, equipped, pruneSkills, skillName, skillPower } from './skills'
 import type { SkillId } from './skills'
-import { TREE_NODES, availableNodes, nodeName, canLevelUp, costOf, countOnPage, isAllocated, isStart, mods, nodeCost, nodeLevel, skillPoints, unlockedPages } from './tree'
+import { TREE_NODES, availableNodes, nodeName, canLevelUp, costOf, countOnPage, isAllocated, isStart, mods, nodeCost, nodeLevel, skillPoints } from './tree'
 
 export type Rng = () => number
 export type Usage = {
@@ -87,7 +87,7 @@ export const defense = (save: Save): number => {
   return Math.max(0, Math.round((BALANCE.hero.baseDef + m.defFlat + (find(save, save.armor)?.power ?? 0)) * pctScale(pct)))
 }
 
-export const newSave = (): Save => ({
+const blankSave = (): Save => ({
   tokens: 0,
   memory: 0,
   allocated: [],
@@ -102,6 +102,12 @@ export const newSave = (): Save => ({
   log: [t('ja', 'log.start')],
   nextId: 1,
 })
+
+// HP は T1 の起点の効果を含めた最大 HP で始める
+export const newSave = (): Save => {
+  const save = blankSave()
+  return { ...save, hp: maxHp(save) }
+}
 
 type LegacySave = Partial<Save> & { level?: number; exp?: number; gold?: number; ranks?: { atk: number; def: number; hp: number } }
 
@@ -148,8 +154,8 @@ const addLog = (save: Save, line: string): Save => ({ ...save, log: [...save.log
 
 // トークンから得る memory の倍率。強化ツリーのページが 1 つ開くごとに 2 倍になる (T1 だけなら ×1、T2 が開くと ×2)。
 // ツリーの値段もページが 1 つ進むごとに 2 倍になるので、どのページにいてもトークンが同じ重みで効く。遺物の付与効果で加算される
-export const tokenMultiplier = (save: Save): number =>
-  BALANCE.economy.tokenMultiplierPerPage ** (unlockedPages(save) - 1) + mods(save).tokenMult
+// 起点の効果 (ページが開くごとに掛かる倍率) に、遺物の足し算の分を加える
+export const tokenMultiplier = (save: Save): number => mods(save).tokenMultX + mods(save).tokenMult
 
 export const gainTokens = (save: Save, tokens: number): Save => ({
   ...save,

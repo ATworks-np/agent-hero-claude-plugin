@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 
 import { CORRIDOR, QUALITIES, TOKENS_PER_MEMORY, floorFeature, floorTheme, roomsOn, autoExplore, farm, tokenMultiplier, allocate, ratioDamage, defense, salvageAll, salvageValue, forge, forgeCost, forgeRate, refund, populate, attack, displayName, itemName, monsterName, gainTokens, makeEquipment, maxHp, migrate, newSave, newScene, spawn, spawnBoss, step, tierOf, weightedTokens } from '../hooks/game'
 import { makeRelic, relicName } from '../hooks/relics'
-import { PAGES, TREE_NODES, canAffordUpgrade, availableNodes, formatAmount, isStart, modLines, mods, nodeCost, unlockedPages } from '../hooks/tree'
+import { PAGES, TREE_NODES, canAffordUpgrade, nodeText, availableNodes, formatAmount, isStart, modLines, mods, nodeCost, unlockedPages } from '../hooks/tree'
 import type { Save } from '../types'
 
 const usage = (input: number, output: number, cacheRead = 0) => ({
@@ -184,7 +184,8 @@ test('装備には 10 段階の品質があり、品質が高いほど性能が�
 test('取得したノードの効果は全ページ分を合算して一覧にできる', async () => {
   const pick = (tier: number, name: string) => [...TREE_NODES.values()].find(node => node.tier === tier && node.name === name)!.id
   const save = { ...newSave(), maxFloor: 11, allocated: [pick(2, '剛力'), pick(3, '剛力'), pick(1, '堅守')] }
-  expect(modLines(mods(save))).toEqual(['攻撃力 +15', '防御力 +2'])
+  // T1 の起点の効果 (最大 HP +50、攻撃力 +5、防御力 +5) も合算に入る
+  expect(modLines(mods(save))).toEqual(['攻撃力 +20', '防御力 +7', '最大 HP +50'])
 })
 
 test('インベントリがあふれたら一番弱い装備を分解して memory にする', async () => {
@@ -281,7 +282,9 @@ test('小ノードは取得後に Lv5 まで上げられ、効果が Lv 倍に�
   for (let i = 0; i < 6; i++) save = allocate(save, small.id)
   expect(save.nodeLevels?.[small.id]).toBe(5)
   const key = (Object.keys(small.mods) as (keyof typeof once)[])[0]!
-  expect(mods(save)[key]).toBe((once[key] as number) * 5)
+  // 起点の効果が同じ種類に入っていることがあるので、それを除いて比べる
+  const base = mods(newSave())[key] as number
+  expect((mods(save)[key] as number) - base).toBe(((once[key] as number) - base) * 5)
   const memory = save.memory
   const down = refund(save, small.id)
   expect(down.nodeLevels?.[small.id]).toBe(4)
@@ -386,4 +389,13 @@ test('memory が足りて取れるノードがあるときだけ、強化でき�
   expect(canAffordUpgrade(save)).toBe(false)
   expect(canAffordUpgrade({ ...save, memory: nodeCost(1, 0) })).toBe(true)
   expect(canAffordUpgrade({ ...save, memory: nodeCost(1, 0) - 1 })).toBe(false)
+})
+
+test('起点の効果: T1 は最大 HP・攻撃力・防御力、T2 以降はページが開くとトークン倍率を 2 倍にする', async () => {
+  const start = (tier: number) => [...TREE_NODES.values()].find(node => node.tier === tier && isStart(node.id))!
+  expect(nodeText(start(1), 0)).toBe('攻撃力 +5、防御力 +5、最大 HP +50')
+  expect(nodeText(start(2), 0)).toBe('トークン倍率 ×2')
+  const save = newSave()
+  expect(maxHp(save)).toBe(51)
+  expect(tokenMultiplier(save)).toBe(1)
 })

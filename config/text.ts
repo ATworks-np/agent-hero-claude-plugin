@@ -31,8 +31,6 @@ const ja = {
   'status.hp': 'HP',
   'status.atk': '攻撃力',
   'status.def': '防御力',
-  'status.tokenMultiplier': 'トークン倍率',
-  'status.tokenMultiplierNote': '(強化のページが 1 つ開くごとに {mult} 倍)',
   'status.power': 'PWR',
   'status.powerNote': '(強化に使った memory の累計)',
   'status.skills': 'スキル',
@@ -247,6 +245,7 @@ const ja = {
   'mod.smith': '鍛錬の効率 +{v} (費用がそのぶん安くなる)',
   'mod.salvager': '分解でもらえる memory +{v}',
   'mod.luckChance': '{v} の確率で品質を 2 回抽選',
+  'mod.tokenMultX': 'トークン倍率 ×{v}',
   'mod.tokenMult': 'トークン倍率 +{v}',
   'mod.spBonus': 'スキルポイント +{v}',
 }
@@ -279,8 +278,6 @@ const en: Record<TextKey, string> = {
   'status.hp': 'HP',
   'status.atk': 'Attack',
   'status.def': 'Defense',
-  'status.tokenMultiplier': 'Token multiplier',
-  'status.tokenMultiplierNote': '(x{mult} for each upgrade page opened)',
   'status.power': 'PWR',
   'status.powerNote': '(total memory spent on upgrades)',
   'status.skills': 'Skills',
@@ -485,6 +482,7 @@ const en: Record<TextKey, string> = {
   'mod.smith': 'Forging efficiency +{v} (lower cost)',
   'mod.salvager': 'Salvage memory +{v}',
   'mod.luckChance': '{v} chance to roll quality twice',
+  'mod.tokenMultX': 'Token multiplier x{v}',
   'mod.tokenMult': 'Token multiplier +{v}',
   'mod.spBonus': 'Skill points +{v}',
 }

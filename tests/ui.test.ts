@@ -68,7 +68,7 @@ test('/agent-hero のペインにステータスとインベントリが描か�
       requestId: 'agent-hero',
       props: { title: 'Agent Hero', isFocused: true, bodyColumns: 60, placement: 'dock', scroll, view: {} },
     })
-    expect(await pane.find({ text: '攻撃力     5' })).toBeDefined()
+    expect(await pane.find({ text: '攻撃力     7' })).toBeDefined()
     await pane.press({ key: 'tab-tree' })
     expect(JSON.stringify(await pane.drawn({ in: 'tree-view' }))).toContain('T1 のツリー')
     await pane.press({ key: 'tab-inventory' })
