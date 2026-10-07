@@ -115,7 +115,7 @@ export type Scene = {
   flash?: string
 }
 
-export type Command = { seq: number; equip?: string; allocate?: string; refund?: string; forge?: ItemKind; salvageAll?: true; learnSkill?: string; equipSkill?: string; unequipSkill?: string; upgradeSkill?: string; refundSkill?: string; equipRelic?: string; unequipRelic?: string; discardRelic?: string; farm?: number; auto?: true; lang?: 'ja' | 'en' }
+export type Command = { seq: number; equip?: string; allocate?: string; refund?: string; forge?: ItemKind; salvageAll?: true; learnSkill?: string; equipSkill?: string; unequipSkill?: string; upgradeSkill?: string; refundSkill?: string; equipRelic?: string; unequipRelic?: string; discardRelic?: string; farm?: number; auto?: true; lang?: 'ja' | 'en'; reset?: true }
 
 export type Inbox = {
   tokens: number
@@ -123,7 +123,12 @@ export type Inbox = {
   workingAt: number
 }
 
+// セーブデータをリセットしたあとの world.json の中身。冒険を始める前と同じ扱いにする
+export type NotStarted = { notStarted: true }
+
 export type World = {
+  // 受信箱にリセットの指示があった。駆動役が world.json を NotStarted に書き換える
+  resetRequested?: boolean
   save: Save
   scene: Scene
   driver: { id: string; at: number } | null
@@ -147,6 +152,8 @@ declare module 'claude-code' {
       notStarted: boolean
       // 始める前に選んだ言語。選んだあとに開発版の注意を出す
       setupLang: 'ja' | 'en' | null
+      // 設定タブでリセットを押し、確認を出している
+      confirmReset: boolean
       // 動いている版 (plugin.json の version)
       version: string | null
       // 新しい版が出ていれば、動いている版と最新の版

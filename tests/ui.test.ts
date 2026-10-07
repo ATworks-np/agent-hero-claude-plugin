@@ -22,14 +22,17 @@ const boot = async ($: Engine, on: On, latest = '0.1.0') => {
   on('clock.now', () => ({ value: 1_000_000 }))
   on('fs.exists', (_, e) => ({ value: files.has(e.path) || [...files.keys()].some(path => path.startsWith(`${e.path}/`)) }))
   on('fs.read', (_, e) => ({ value: files.get(e.path) ?? (e.path.endsWith('/.claude-plugin/plugin.json') ? MANIFEST : '') }))
+  // 受信箱は更新時刻が変わったときだけ読み直されるので、書くたびに時刻を進める
+  const mtimes = new Map<string, number>()
   on('fs.write', (_, e) => {
     files.set(e.path, e.text)
+    mtimes.set(e.path, mtimes.size + (mtimes.get(e.path) ?? 0) + 1)
     return { value: undefined }
   })
   on('fs.list', (_, e) => ({
     value: [...files.keys()]
       .filter(path => path.startsWith(`${e.path}/`))
-      .map(path => ({ name: path.slice(e.path!.length + 1), kind: 'file' as const, size: 0, mtimeMs: 0, isLink: false })),
+      .map(path => ({ name: path.slice(e.path!.length + 1), kind: 'file' as const, size: 0, mtimeMs: mtimes.get(path) ?? 0, isLink: false })),
   }))
   on('session.start', () => ({ cwd: '/tmp' }))
   await $.session.start({ cwd: '/tmp', surface: 'terminal', isInteractive: true })
@@ -208,7 +211,8 @@ test('はじめての起動では冒険が始まらず、言語を選んで開�
   const pane = await $.ui.mount({ plugin: 'agent-hero', surface: 'terminal', component: 'Pane', requestId: 'agent-hero', props: PANE_PROPS })
   expect(await pane.find({ key: 'setup-lang-en' })).toBeDefined()
   await pane.press({ key: 'setup-lang-en' })
-  expect(await pane.find({ text: 'This is a development version' })).toBeDefined()
+  expect(await pane.find({ text: 'This is a development version' }))
+  expect(await pane.find({ text: 'What this plugin reads from Claude Code' })).toBeDefined()
   await pane.press({ key: 'setup-ok' })
   expect(await pane.find({ key: 'tab-settings' })).toBeDefined()
   await pane.unmount()
@@ -221,4 +225,21 @@ test('はじめての起動では冒険が始まらず、言語を選んで開�
   })
   expect(await after.find({ text: 'PWR 0 ' })).toBeDefined()
   await after.unmount()
+})
+
+test('設定タブでセーブデータをリセットすると、確認のあとはじめての起動の手順に戻る', async ($, on) => {
+  await start($, on)
+  const pane = await $.ui.mount({ plugin: 'agent-hero', surface: 'terminal', component: 'Pane', requestId: 'agent-hero', props: PANE_PROPS })
+  await pane.press({ key: 'tab-settings' })
+  expect(await pane.find({ text: '・外部への送信: しない。トークン数を含め、読み取った情報も進行もどこにも送信しない' })).toBeDefined()
+  await pane.press({ key: 'reset' })
+  expect(await pane.find({ key: 'reset-cancel' })).toBeDefined()
+  await pane.press({ key: 'reset-cancel' })
+  expect(await pane.find({ key: 'reset-confirm' })).toBeUndefined()
+  await pane.press({ key: 'reset' })
+  await pane.press({ key: 'reset-confirm' })
+  // テストでは時計が進まないので、セッションの開始で駆動役の 1 回分を動かす
+  await $.session.start({ cwd: '/tmp', surface: 'terminal', isInteractive: true })
+  expect(await pane.find({ key: 'setup-lang-ja' })).toBeDefined()
+  await pane.unmount()
 })

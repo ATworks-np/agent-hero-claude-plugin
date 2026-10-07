@@ -3,7 +3,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import { BALANCE } from '../config/balance'
 
-import type { Command, Inbox, Item, Save, Tab, World } from '../types'
+import type { Command, Inbox, Item, NotStarted, Save, Tab, World } from '../types'
 import {
   attack,
   canForge,
@@ -61,7 +61,6 @@ const PANE = 'agent-hero'
 const TREE_VIEW = 'tree-view'
 const SKILL_VIEW = 'skill-view'
 const MAP_VIEW = 'map-view'
-const STORE_KEY = 'save'
 // 勇者が 1 歩進む間隔 (config/balance.ts)。作業中かどうかに関わらず一定
 const TICK_MS = BALANCE.dungeon.stepMs
 // 作業中の印を受信箱に書き直す間隔
@@ -80,6 +79,7 @@ const tabAtom = atom({ plugin: 'agent-hero', key: 'tab' } as const, 'status')
 const pageAtom = atom({ plugin: 'agent-hero', key: 'treePage' } as const, 1)
 const workingAtom = atom({ plugin: 'agent-hero', key: 'isWorking' } as const, false)
 const notStartedAtom = atom({ plugin: 'agent-hero', key: 'notStarted' } as const, false)
+const confirmResetAtom = atom({ plugin: 'agent-hero', key: 'confirmReset' } as const, false)
 const setupLangAtom = atom({ plugin: 'agent-hero', key: 'setupLang' } as const, null)
 const versionAtom = atom({ plugin: 'agent-hero', key: 'version' } as const, null)
 const updateAtom = atom({ plugin: 'agent-hero', key: 'update' } as const, null)
@@ -168,20 +168,22 @@ async function writeInbox($: EngineInterface, ctx: Ctx) {
 // 読めない (書き込み途中など) ときは作り直さず、その回を見送る。
 async function readWorld($: EngineInterface, ctx: Ctx): Promise<World | null> {
   const path = paths($.plugin.root, ctx.me).world
-  const isMissing = !(await $.fs.exists(path))
-  if ((await read($, notStartedAtom)) !== isMissing) await update($, notStartedAtom, () => isMissing)
-  ctx.isStarted = !isMissing
-  if (isMissing) return null
-  return parse<World>(await $.fs.read(path))
+  const text = (await $.fs.exists(path)) ? await $.fs.read(path) : null
+  const parsed = text === null ? null : parse<World | NotStarted>(text)
+  if (text !== null && !parsed) return null
+  const isNotStarted = !parsed || 'notStarted' in parsed
+  if ((await read($, notStartedAtom)) !== isNotStarted) await update($, notStartedAtom, () => isNotStarted)
+  ctx.isStarted = !isNotStarted
+  return parsed && !('notStarted' in parsed) ? parsed : null
 }
 
 // 冒険を始める。ほかのセッションが先に始めていれば何もしない。
 // 始める前に各セッションが受信箱に書いたトークンは取り込み済みとして扱い、数えない
 async function startAdventure($: EngineInterface, ctx: Ctx, lang: Lang) {
   const path = paths($.plugin.root, ctx.me).world
-  if (!(await $.fs.exists(path))) {
-    const stored = (await $.store.get(STORE_KEY)) as Save | undefined
-    const world = newWorld(stored)
+  const current = (await $.fs.exists(path)) ? parse<World | NotStarted>(await $.fs.read(path)) : null
+  if (!current || 'notStarted' in current) {
+    const world = newWorld()
     const now = await $.clock.now()
     const applied: World['applied'] = {}
     for (const [id, inbox] of Object.entries(await readInboxes($, ctx, now))) {
@@ -224,6 +226,16 @@ async function tick($: EngineInterface, ctx: Ctx) {
   if (!world) return
   if (isDriver(world, ctx.me, now)) {
     world = applyInboxes(world, await readInboxes($, ctx, now), now)
+    // リセットは駆動役だけが行う (world.json を書くのは駆動役だけなので、ほかのセッションが書き戻すことはない)。
+    // 元のセーブはバックアップとして残す
+    if (world.resetRequested) {
+      const { world: path } = paths($.plugin.root, ctx.me)
+      await $.fs.write(`${dataDir($.plugin.root)}/world.backup-reset-${now}.json`, await $.fs.read(path))
+      await $.fs.write(path, JSON.stringify({ notStarted: true } satisfies NotStarted))
+      await update($, confirmResetAtom, () => false)
+      await readWorld($, ctx)
+      return
+    }
     world = advance(world, Math.random)
     world = { ...world, driver: { id: ctx.me, at: now } }
     await $.fs.write(paths($.plugin.root, ctx.me).world, JSON.stringify(world))
@@ -354,6 +366,9 @@ const treeViewProps = (save: Save, tier: number): TreeViewProps => {
     canAfford: save.memory >= cost,
   }
 }
+
+// Claude Code から読み取る情報と、外部への送信の有無。はじめての起動と設定タブで同じものを出す
+const DATA_KEYS = ['setup.dataReads', 'setup.dataNotRead', 'setup.dataStored', 'setup.dataSend', 'setup.dataNetwork'] as const
 
 // 表示上の幅 (全角は 2) で揃えた項目名。ステータスの値の列を言語によらず揃えるため
 const LABEL_WIDTH: Record<Lang, number> = { ja: 11, en: 18 }
@@ -560,13 +575,19 @@ export const register: Register = on => {
           </Box>
         )
       }
-      // 2. 選んだ言語で開発版の注意を出し、「わかりました」で始める
+      // 2. 選んだ言語で、開発版の注意と Claude Code から読み取る情報を出し、「承諾して始める」で始める
       return (
         <Box flexDirection="column" gap={1}>
           <Text bold color="#ffd700">{t(chosen, 'setup.devTitle')}</Text>
           <Box flexDirection="column">
             <Text>{t(chosen, 'setup.devUnstable')}</Text>
             <Text>{t(chosen, 'setup.devProgress')}</Text>
+          </Box>
+          <Box flexDirection="column">
+            <Text bold color="#ffd700">{t(chosen, 'setup.dataTitle')}</Text>
+            {DATA_KEYS.map(key => (
+              <Text>{`・${t(chosen, key)}`}</Text>
+            ))}
           </Box>
           <Box flexDirection="row" gap={2}>
             <Button key="setup-ok" label={t(chosen, 'setup.ok')} onPress={() => startAdventure($, ctx, chosen)} />
@@ -948,6 +969,29 @@ export const register: Register = on => {
                 <Text dimColor>{t(lang, `settings.step${n}Note`)}</Text>
               </Box>
             ))}
+          </Box>
+          <Box flexDirection="column" marginTop={1}>
+            <Text bold>{t(lang, 'setup.dataTitle')}</Text>
+            {DATA_KEYS.map(key => (
+              <Text dimColor>{`・${t(lang, key)}`}</Text>
+            ))}
+          </Box>
+          <Box flexDirection="column" marginTop={1}>
+            <Text bold>{t(lang, 'settings.reset')}</Text>
+            {(await read($, confirmResetAtom)) ? (
+              <Box flexDirection="column">
+                <Text color="#ff5f5f">{t(lang, 'settings.resetWarning')}</Text>
+                <Box flexDirection="row" gap={2}>
+                  <Button key="reset-confirm" label={t(lang, 'settings.resetConfirm')} onPress={() => sendCommand($, ctx, { reset: true })} />
+                  <Button key="reset-cancel" label={t(lang, 'settings.resetCancel')} dimColor onPress={() => update($, confirmResetAtom, () => false)} />
+                </Box>
+              </Box>
+            ) : (
+              <Box flexDirection="row" gap={1}>
+                <Button key="reset" label={t(lang, 'settings.resetButton')} dimColor onPress={() => update($, confirmResetAtom, () => true)} />
+                <Text dimColor>{t(lang, 'settings.resetNote')}</Text>
+              </Box>
+            )}
           </Box>
         </Box>
       ) : (

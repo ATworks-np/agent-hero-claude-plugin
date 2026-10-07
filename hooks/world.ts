@@ -44,6 +44,7 @@ export const applyInboxes = (world: World, inboxes: Record<string, Inbox>, now: 
   let save = migrate(world.save)
   const texts: string[] = []
   const applied: World['applied'] = {}
+  let resetRequested = false
   for (const [id, inbox] of Object.entries(inboxes)) {
     const total = inbox.tokens ?? 0
     // 旧形式の取り込み記録 (tokens の無いもの) は取り込み済みとみなす
@@ -52,6 +53,7 @@ export const applyInboxes = (world: World, inboxes: Record<string, Inbox>, now: 
     if (total > doneTokens) save = gainTokens(save, total - doneTokens)
     for (const cmd of inbox.cmds) {
       if (cmd.seq <= done.cmd) continue
+      if (cmd.reset) resetRequested = true
       if (cmd.lang) save = { ...save, lang: cmd.lang }
       if (cmd.equip) save = equip(save, cmd.equip)
       if (cmd.allocate) save = allocate(save, cmd.allocate)
@@ -78,7 +80,7 @@ export const applyInboxes = (world: World, inboxes: Record<string, Inbox>, now: 
   const isWorking = Object.values(inboxes).some(inbox => now - inbox.workingAt < WORKING_STALE_MS)
   // マップで階を移ったら、その階の 1 部屋目からやり直す
   const scene = save.floor !== world.save.floor || save.farmFloor !== world.save.farmFloor ? newScene() : world.scene
-  return pushEvents({ ...world, save, scene, applied, isWorking }, texts)
+  return pushEvents({ ...world, save, scene, applied, isWorking, resetRequested }, texts)
 }
 
 export const advance = (world: World, rng: Rng): World => {
