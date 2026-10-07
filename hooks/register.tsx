@@ -370,6 +370,30 @@ const treeViewProps = (save: Save, tier: number): TreeViewProps => {
 // Claude Code から読み取る情報と、外部への送信の有無。はじめての起動と設定タブで同じものを出す
 const DATA_KEYS = ['setup.dataReads', 'setup.dataNotRead', 'setup.dataStored', 'setup.dataSend', 'setup.dataNetwork'] as const
 
+// 利用規約の本文。はじめての起動で同意を求める画面と、設定タブの「利用規約」で同じものを出す。
+// Box と Text は描く画面の要素 ($.ui.resolve の結果) を渡す
+type TermsElements = Pick<ReturnType<EngineInterface['ui']['resolve']>, 'Box' | 'Text'>
+const termsBody = ({ Box, Text }: TermsElements, lang: Lang, isDim: boolean) => (
+  <Box flexDirection="column" gap={1}>
+    <Box flexDirection="column">
+      <Text bold>{t(lang, 'terms.devTitle')}</Text>
+      {(['setup.devTitle', 'setup.devUnstable', 'setup.devProgress'] as const).map(key => (
+        <Text dimColor={isDim}>{`・${t(lang, key)}`}</Text>
+      ))}
+    </Box>
+    <Box flexDirection="column">
+      <Text bold>{t(lang, 'setup.dataTitle')}</Text>
+      {DATA_KEYS.map(key => (
+        <Text dimColor={isDim}>{`・${t(lang, key)}`}</Text>
+      ))}
+    </Box>
+    <Box flexDirection="column">
+      <Text bold>{t(lang, 'terms.licenseTitle')}</Text>
+      <Text dimColor={isDim}>{`・${t(lang, 'terms.license')}`}</Text>
+    </Box>
+  </Box>
+)
+
 // 表示上の幅 (全角は 2) で揃えた項目名。ステータスの値の列を言語によらず揃えるため
 const LABEL_WIDTH: Record<Lang, number> = { ja: 11, en: 18 }
 const displayWidth = (text: string): number => [...text].reduce((sum, ch) => sum + (/[\u3000-\u9fff\uff00-\uffef]/.test(ch) ? 2 : 1), 0)
@@ -575,20 +599,11 @@ export const register: Register = on => {
           </Box>
         )
       }
-      // 2. 選んだ言語で、開発版の注意と Claude Code から読み取る情報を出し、「承諾して始める」で始める
+      // 2. 選んだ言語で利用規約 (開発版の注意・Claude Code から読み取る情報・ライセンス) を出し、同意すると始まる
       return (
         <Box flexDirection="column" gap={1}>
-          <Text bold color="#ffd700">{t(chosen, 'setup.devTitle')}</Text>
-          <Box flexDirection="column">
-            <Text>{t(chosen, 'setup.devUnstable')}</Text>
-            <Text>{t(chosen, 'setup.devProgress')}</Text>
-          </Box>
-          <Box flexDirection="column">
-            <Text bold color="#ffd700">{t(chosen, 'setup.dataTitle')}</Text>
-            {DATA_KEYS.map(key => (
-              <Text>{`・${t(chosen, key)}`}</Text>
-            ))}
-          </Box>
+          <Text bold color="#ffd700">{t(chosen, 'terms.title')}</Text>
+          {termsBody(elements, chosen, false)}
           <Box flexDirection="row" gap={2}>
             <Button key="setup-ok" label={t(chosen, 'setup.ok')} onPress={() => startAdventure($, ctx, chosen)} />
             <Button key="setup-back" label={t(chosen, 'setup.back')} dimColor onPress={() => update($, setupLangAtom, () => null)} />
@@ -971,10 +986,8 @@ export const register: Register = on => {
             ))}
           </Box>
           <Box flexDirection="column" marginTop={1}>
-            <Text bold>{t(lang, 'setup.dataTitle')}</Text>
-            {DATA_KEYS.map(key => (
-              <Text dimColor>{`・${t(lang, key)}`}</Text>
-            ))}
+            <Text bold color="#ffd700">{t(lang, 'terms.title')}</Text>
+            {termsBody(elements, lang, true)}
           </Box>
           <Box flexDirection="column" marginTop={1}>
             <Text bold>{t(lang, 'settings.reset')}</Text>

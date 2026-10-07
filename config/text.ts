@@ -156,7 +156,11 @@ const ja = {
   'setup.dataStored': '保存先: ~/.claude/agent-hero/ (このマシンの中だけ)',
   'setup.dataSend': '外部への送信: しない。トークン数を含め、読み取った情報も進行もどこにも送信しない',
   'setup.dataNetwork': '通信: 6 時間に 1 回、GitHub から plugin.json を受信して新しい版があるか確かめる (受信だけで、送信はしない)',
-  'setup.ok': '承諾して始める',
+  'setup.ok': '利用規約に同意して始める',
+  'terms.title': '利用規約',
+  'terms.devTitle': '開発版について',
+  'terms.licenseTitle': 'ライセンス',
+  'terms.license': 'MIT License。このプラグインは無保証で提供され、利用によって生じた損害について作者は責任を負わない',
   'setup.back': '言語を選び直す',
 
   // アップデート
@@ -375,7 +379,11 @@ const en: Record<TextKey, string> = {
   'setup.dataStored': 'Stored in: ~/.claude/agent-hero/ (on this machine only)',
   'setup.dataSend': 'Sending: none. Nothing it reads, token counts included, and none of your progress is sent anywhere',
   'setup.dataNetwork': 'Network: every 6 hours, downloads plugin.json from GitHub to check for a new version (download only, nothing is uploaded)',
-  'setup.ok': 'Accept and start',
+  'setup.ok': 'Agree to the terms and start',
+  'terms.title': 'Terms of use',
+  'terms.devTitle': 'Development version',
+  'terms.licenseTitle': 'License',
+  'terms.license': 'MIT License. This plugin is provided as is, without warranty, and the author is not liable for any damage from its use',
   'setup.back': 'Choose the language again',
 
   'update.available': 'An update is available (v{current} → v{latest})',

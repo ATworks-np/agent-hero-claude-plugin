@@ -231,6 +231,8 @@ test('設定タブでセーブデータをリセットすると、確認のあ�
   await start($, on)
   const pane = await $.ui.mount({ plugin: 'agent-hero', surface: 'terminal', component: 'Pane', requestId: 'agent-hero', props: PANE_PROPS })
   await pane.press({ key: 'tab-settings' })
+  expect(await pane.find({ text: '利用規約' })).toBeDefined()
+  expect(await pane.find({ text: '・これは開発版です' })).toBeDefined()
   expect(await pane.find({ text: '・外部への送信: しない。トークン数を含め、読み取った情報も進行もどこにも送信しない' })).toBeDefined()
   await pane.press({ key: 'reset' })
   expect(await pane.find({ key: 'reset-cancel' })).toBeDefined()
