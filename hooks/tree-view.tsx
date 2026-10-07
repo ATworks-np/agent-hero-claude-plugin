@@ -8,7 +8,6 @@ import type { Lang } from './i18n'
 //   ↑ ↓ ← → 盤面の上でノードを移動する
 //   Enter 選んだノードを取得する。取得済みの小ノードなら Lv を上げる (Lv5 まで)
 //   Backspace 小ノードの Lv を 1 つ下げる。Lv1 ならノードを外す (外すと先のノードが起点から切れる場合は外せない)。memory は戻る
-//   1〜9 タブを切り替える (この欄にフォーカスがある間はペインのボタンに数字キーが届かないため)
 //   クリック 最上段の T1〜T10 でページを切り替える (選んでいるページは反転表示)
 // 取得とページの切り替えは post でフック側 (register.tsx の ui.message) に渡す。
 
@@ -43,7 +42,7 @@ export type TreeViewProps = {
   cost: string
   canAfford: boolean
 }
-export type TreeViewMessage = { allocate: string } | { refund: string } | { tab: number } | { page: number }
+export type TreeViewMessage = { allocate: string } | { refund: string } | { page: number }
 
 // カーソルは盤面上の位置で持つ。どのページも同じ盤面なので、ページを替えても同じ位置に残る
 type State = { x: number; y: number }
@@ -66,7 +65,7 @@ const onKey = (surface: ClientSurface<State>, key: string) => {
   } else if (key === 'backspace' || key === 'delete') {
     const node = props.nodes.find(one => one.x === state.x && one.y === state.y)
     if (node?.canRefund) surface.post({ refund: node.id } satisfies TreeViewMessage)
-  } else if (/^[1-9]$/.test(key)) surface.post({ tab: Number(key) } satisfies TreeViewMessage)
+  }
 }
 
 // 最上段に並べるページの見出し。クリックされた列からページを割り出せるよう、幅もここで決める

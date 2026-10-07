@@ -1,4 +1,4 @@
-import type { BossTrait, Buffs, Item, Monster, Save, Scene } from '../types'
+import type { BossTrait, Buffs, Item, Monster, Note, Save, Scene } from '../types'
 import { BALANCE } from '../config/balance'
 import { CONTENT } from '../config/content'
 import { contentOf, langOf, t } from './i18n'
@@ -509,10 +509,10 @@ const pickUp = (save: Save, item: Item): Save => {
   return next
 }
 
-export type StepResult = { save: Save; scene: Scene; notes: string[] }
+export type StepResult = { save: Save; scene: Scene; notes: Note[] }
 
 export const step = (save: Save, scene: Scene, rng: Rng): StepResult => {
-  const notes: string[] = []
+  const notes: Note[] = []
   const frame = scene.frame + 1
 
   if (scene.phase === 'dead' || scene.phase === 'stairs' || scene.phase === 'door') {
@@ -525,7 +525,7 @@ export const step = (save: Save, scene: Scene, rng: Rng): StepResult => {
       { ...save, floor, maxFloor: Math.max(save.maxFloor, floor), hp: maxHp(save) },
       say(save, save.farmFloor ? 'log.farmAgain' : 'log.descend', { floor }),
     )
-    if (floor > save.maxFloor) notes.push(say(save, 'note.reached', { floor }))
+    if (floor > save.maxFloor) notes.push({ kind: 'floor', text: say(save, 'note.reached', { floor }) })
     return { save: next, scene: newScene(), notes }
   }
 
@@ -541,7 +541,7 @@ export const step = (save: Save, scene: Scene, rng: Rng): StepResult => {
     if (!scene.isPopulated) {
       queue = populate(save.floor, room, scene.x)
       const boss = queue.find(one => one.isBoss)
-      if (boss) notes.push(say(save, 'note.bossWaiting', { boss: monsterName(boss, langOf(save)), title: bossTitle(boss, langOf(save)) }))
+      if (boss) notes.push({ kind: 'boss', text: say(save, 'note.bossWaiting', { boss: monsterName(boss, langOf(save)), title: bossTitle(boss, langOf(save)) }) })
     }
     let monster = scene.monster
     if (!monster && queue[0] && x + 1 >= queue[0].x) {
@@ -686,7 +686,7 @@ const support = (id: SkillId, save: Save): Save => {
   }
 }
 
-const heroTurn = (save: Save, scene: Scene, monster: Monster, frame: number, rng: Rng, notes: string[]): StepResult => {
+const heroTurn = (save: Save, scene: Scene, monster: Monster, frame: number, rng: Rng, notes: Note[]): StepResult => {
   let next = tickTurn(save)
   let target = monster
   const cast: string[] = []
@@ -762,7 +762,7 @@ const heroTurn = (save: Save, scene: Scene, monster: Monster, frame: number, rng
   return { save: next, scene: { ...scene, frame, monster: { ...target, hp }, hit: 'monster', heroHits, flash }, notes }
 }
 
-const monsterTurn = (save: Save, scene: Scene, monster: Monster, frame: number, rng: Rng, notes: string[]): StepResult => {
+const monsterTurn = (save: Save, scene: Scene, monster: Monster, frame: number, rng: Rng, notes: Note[]): StepResult => {
   // 盾打ちで動けない間は攻撃してこない
   if (monster.stun && monster.stun > 0) {
     return { save, scene: { ...scene, frame, monster: { ...monster, stun: monster.stun - 1 }, hit: null, flash: undefined }, notes }
@@ -807,23 +807,23 @@ const monsterTurn = (save: Save, scene: Scene, monster: Monster, frame: number, 
     { ...save, hp: maxHp(save), deaths: save.deaths + 1, buffs: {} },
     say(save, 'log.defeated', { monster: monsterName(monster, langOf(save)), floor: save.floor }),
   )
-  notes.push(say(save, 'note.defeated', { monster: monsterName(monster, langOf(save)) }))
+  notes.push({ kind: 'death', text: say(save, 'note.defeated', { monster: monsterName(monster, langOf(save)) }) })
   return { save: next, scene: { ...scene, frame, phase: 'dead', wait: BALANCE.dungeon.deathWait, hit: null, flash: undefined }, notes }
 }
 
 // 敵を倒したあとの処理: 討伐数とドロップ。倒したときに効くパッシブとスキルの効果もここで使い切る
-const defeat = (save: Save, scene: Scene, monster: Monster, frame: number, rng: Rng, notes: string[]): StepResult => {
+const defeat = (save: Save, scene: Scene, monster: Monster, frame: number, rng: Rng, notes: Note[]): StepResult => {
   const km = mods(save)
   const b = save.buffs ?? {}
   const top = maxHp(save)
   const hp = km.firstaid > 0 ? Math.min(top, save.hp + Math.ceil(top * km.firstaid)) : save.hp
   let next = addLog({ ...save, hp, kills: save.kills + 1 }, say(save, 'log.killed', { monster: monsterName(monster, langOf(save)) }))
-  if (monster.isBoss) notes.push(say(save, 'note.bossKilled', { monster: monsterName(monster, langOf(save)) }))
+  if (monster.isBoss) notes.push({ kind: 'boss', text: say(save, 'note.bossKilled', { monster: monsterName(monster, langOf(save)) }) })
   // ボスはまれに遺物を落とす。付与の数はそのボスの階の Tier で決まる
   if (monster.isBoss && rng() < BALANCE.relic.dropRate) {
     const relic = makeRelic(`r${next.nextId}`, tierOf(save.floor) + 1, rng)
     next = addRelic({ ...next, nextId: next.nextId + 1 }, relic)
-    notes.push(say(save, 'log.relicGot', { name: relicName(relic, langOf(save)) }))
+    notes.push({ kind: 'loot', text: say(save, 'log.relicGot', { name: relicName(relic, langOf(save)) }) })
   }
   const loot = makeLoot(next, rng, monster.isBoss)
   // 撃破とドロップで使い切る効果を外す。宝の匂いは残りの体数を減らす
@@ -832,8 +832,8 @@ const defeat = (save: Save, scene: Scene, monster: Monster, frame: number, rng: 
   next = { ...next, buffs: loot ? { ...used, appraise: undefined, goldenhand: undefined } : used }
   if (loot) {
     next = pickUp(next, loot)
-    if ((loot.quality ?? 0) >= NOTABLE_QUALITY) notes.push(say(next, 'note.got', { item: displayName(loot, langOf(next)) }))
-    else if (loot.id === (loot.kind === 'weapon' ? next.weapon : next.armor)) notes.push(say(next, 'note.equipped', { item: displayName(loot, langOf(next)) }))
+    if ((loot.quality ?? 0) >= NOTABLE_QUALITY) notes.push({ kind: 'loot', text: say(next, 'note.got', { item: displayName(loot, langOf(next)) }) })
+    else if (loot.id === (loot.kind === 'weapon' ? next.weapon : next.armor)) notes.push({ kind: 'loot', text: say(next, 'note.equipped', { item: displayName(loot, langOf(next)) }) })
   }
   return { save: next, scene: { ...scene, frame, monster: null, phase: 'walk', hit: null, heroHits: 0 }, notes }
 }

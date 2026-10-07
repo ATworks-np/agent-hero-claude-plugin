@@ -3,7 +3,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import { BALANCE } from '../config/balance'
 
-import type { Command, Inbox, Item, NotStarted, Save, Tab, World } from '../types'
+import type { Command, Inbox, Item, NoteKind, NotStarted, Save, Tab, World } from '../types'
 import {
   attack,
   canForge,
@@ -80,15 +80,18 @@ const tabAtom = atom({ plugin: 'agent-hero', key: 'tab' } as const, 'status')
 const pageAtom = atom({ plugin: 'agent-hero', key: 'treePage' } as const, 1)
 const workingAtom = atom({ plugin: 'agent-hero', key: 'isWorking' } as const, false)
 const notStartedAtom = atom({ plugin: 'agent-hero', key: 'notStarted' } as const, false)
+const settingsSectionAtom = atom({ plugin: 'agent-hero', key: 'settingsSection' } as const, 'language')
 const confirmResetAtom = atom({ plugin: 'agent-hero', key: 'confirmReset' } as const, false)
 const setupLangAtom = atom({ plugin: 'agent-hero', key: 'setupLang' } as const, null)
 const versionAtom = atom({ plugin: 'agent-hero', key: 'version' } as const, null)
 const updateAtom = atom({ plugin: 'agent-hero', key: 'update' } as const, null)
 
-// 並び順がそのまま数字キー (1〜9) の割り当てになる
 const TABS: Tab[] = ['status', 'tree', 'skill', 'relic', 'equipment', 'inventory', 'log', 'map', 'settings']
 // タブを 2 段に並べるときの 1 段目の数
 const TABS_FIRST_ROW = 5
+// 設定タブの項目と、通知の種類 (設定タブに並べる順)
+const SETTINGS_SECTIONS = ['language', 'notify', 'version', 'terms', 'data'] as const
+const NOTE_KINDS: NoteKind[] = ['floor', 'boss', 'death', 'loot', 'forge', 'update']
 
 // 共有データはプラグインの外 (設定フォルダの agent-hero/。既定では ~/.claude/agent-hero/) に置き、
 // プラグインを入れ直したり更新したりしても消えないようにする。マーケットプレイスから入れたプラグインは
@@ -119,8 +122,9 @@ async function checkUpdate($: EngineInterface) {
     const fetched = response?.ok ? parse<{ version?: string }>(response.text)?.version : undefined
     // 取れなかったときも確かめた時刻は進め、次の確認まで通信しない
     const next: UpdateCache = { checkedAt: now, latest: fetched ?? cache?.latest ?? current }
-    if (fetched && fetched !== cache?.latest && isNewer(fetched, current)) {
-      $.ui.toast(t(langOf(await read($, saveAtom)), 'update.available', { current, latest: fetched }))
+    const save = await read($, saveAtom)
+    if (fetched && fetched !== cache?.latest && isNewer(fetched, current) && save?.notify?.update !== false) {
+      $.ui.toast(t(langOf(save), 'update.available', { current, latest: fetched }))
     }
     cache = next
     await $.fs.write(path, JSON.stringify(cache))
@@ -253,7 +257,9 @@ async function tick($: EngineInterface, ctx: Ctx) {
 
   // 起動時点までの出来事は通知せず、それ以降に起きた出来事だけを全セッションでトーストする
   if (ctx.lastEvent !== null) {
-    for (const event of shown.events) if (event.seq > ctx.lastEvent) $.ui.toast(event.text)
+    for (const event of shown.events) {
+      if (event.seq > ctx.lastEvent && (!event.kind || shown.save.notify?.[event.kind] !== false)) $.ui.toast(event.text)
+    }
   }
   ctx.lastEvent = shown.eventSeq
 }
@@ -457,10 +463,6 @@ export const register: Register = on => {
     if ('page' in message) await update($, pageAtom, () => Math.min(PAGES, Math.max(1, message.page)))
     if ('allocate' in message) await sendCommand($, ctx, { allocate: message.allocate })
     if ('refund' in message) await sendCommand($, ctx, { refund: message.refund })
-    if ('tab' in message) {
-      const tab = TABS[message.tab - 1]
-      if (tab) await selectTab($, tab)
-    }
     return {}
   })
 
@@ -469,10 +471,6 @@ export const register: Register = on => {
     const message = e.data as MapViewMessage
     if ('farm' in message) await sendCommand($, ctx, { farm: message.farm })
     if ('auto' in message) await sendCommand($, ctx, { auto: true })
-    if ('tab' in message) {
-      const tab = TABS[message.tab - 1]
-      if (tab) await selectTab($, tab)
-    }
     return {}
   })
 
@@ -484,10 +482,6 @@ export const register: Register = on => {
     if ('unequip' in message) await sendCommand($, ctx, { unequipSkill: message.unequip })
     if ('upgrade' in message) await sendCommand($, ctx, { upgradeSkill: message.upgrade })
     if ('refund' in message) await sendCommand($, ctx, { refundSkill: message.refund })
-    if ('tab' in message) {
-      const tab = TABS[message.tab - 1]
-      if (tab) await selectTab($, tab)
-    }
     return {}
   })
 
@@ -643,6 +637,7 @@ export const register: Register = on => {
 
     const tab = await read($, tabAtom)
     const newVersion = await read($, updateAtom)
+    const section = await read($, settingsSectionAtom)
     const room = Math.max(3, (e.viewport?.rows ?? 24) - 6)
 
     // memory や SP で何か取れるタブには印を付け、選んでいなくても明るく出す
@@ -653,13 +648,12 @@ export const register: Register = on => {
     // タブは 2 段に並べる
     const tabs = (
       <Box flexDirection="column">
-        {[TABS.slice(0, TABS_FIRST_ROW), TABS.slice(TABS_FIRST_ROW)].map((row, r) => (
+        {[TABS.slice(0, TABS_FIRST_ROW), TABS.slice(TABS_FIRST_ROW)].map(row => (
           <Box flexDirection="row" gap={2}>
-            {row.map((one, i) => (
+            {row.map(one => (
               <Button
                 key={`tab-${one}`}
                 label={hasAction[one] ? `${t(lang, `tab.${one}`)} ●` : t(lang, `tab.${one}`)}
-                hotkey={String(r * TABS_FIRST_ROW + i + 1)}
                 // [ ] の枠なしで描く。選んでいないタブは薄く表示して、選んでいるタブと見分ける
                 plain
                 dimColor={one !== tab && !hasAction[one]}
@@ -961,57 +955,86 @@ export const register: Register = on => {
           })}
         </Box>
       ) : tab === 'settings' ? (
-        <Box flexDirection="column">
+        <Box flexDirection="column" gap={1}>
+          {/* 項目を選び、選んだ項目だけを下に出す */}
           <Box flexDirection="row" gap={2}>
-            <Text bold>{t(lang, 'settings.language')}</Text>
-            {LANGUAGES.map(one => (
+            {SETTINGS_SECTIONS.map(one => (
               <Button
-                key={`lang-${one.id}`}
-                label={one.id === lang ? `[${one.name}]` : ` ${one.name} `}
+                key={`settings-${one}`}
+                label={t(lang, `settings.section.${one}`)}
                 plain
-                dimColor={one.id !== lang}
-                onPress={() => sendCommand($, ctx, { lang: one.id })}
+                dimColor={one !== section}
+                onPress={() => update($, settingsSectionAtom, () => one)}
               />
             ))}
           </Box>
-          <Text dimColor>{t(lang, 'settings.languageNote')}</Text>
-          <Box flexDirection="column" marginTop={1}>
-            <Text>
-              <Text bold>{t(lang, 'settings.version')}</Text>
-              {`  v${(await read($, versionAtom)) ?? '?'}`}
-              {newVersion ? <Text color="#ffd700">{`  (${t(lang, 'settings.latest', { latest: newVersion.latest })})`}</Text> : <Text dimColor>{`  (${t(lang, 'settings.upToDate')})`}</Text>}
-            </Text>
-          </Box>
-          <Box flexDirection="column" marginTop={1}>
-            <Text bold>{t(lang, 'settings.updateSteps')}</Text>
-            {(['1', '2'] as const).map(n => (
+          {section === 'language' ? (
+            <Box flexDirection="column">
+              <Box flexDirection="row" gap={2}>
+                {LANGUAGES.map(one => (
+                  <Button
+                    key={`lang-${one.id}`}
+                    label={`${one.id === lang ? '◉' : '○'} ${one.name}`}
+                    plain
+                    dimColor={one.id !== lang}
+                    onPress={() => sendCommand($, ctx, { lang: one.id })}
+                  />
+                ))}
+              </Box>
+              <Text dimColor>{t(lang, 'settings.languageNote')}</Text>
+            </Box>
+          ) : section === 'notify' ? (
+            <Box flexDirection="column">
+              {NOTE_KINDS.map(kind => {
+                const isOn = save.notify?.[kind] !== false
+                return (
+                  <Box flexDirection="row" gap={1}>
+                    <Button
+                      key={`notify-${kind}`}
+                      label={`${isOn ? '☑' : '☐'} ${t(lang, `notify.${kind}`)}`}
+                      plain
+                      dimColor={!isOn}
+                      onPress={() => sendCommand($, ctx, { notify: { kind, on: !isOn } })}
+                    />
+                    <Text dimColor>{t(lang, `notify.${kind}Note`)}</Text>
+                  </Box>
+                )
+              })}
+              <Text dimColor>{t(lang, 'settings.notifyNote')}</Text>
+            </Box>
+          ) : section === 'version' ? (
+            <Box flexDirection="column" gap={1}>
+              <Text>
+                <Text bold>{t(lang, 'settings.version')}</Text>
+                {`  v${(await read($, versionAtom)) ?? '?'}`}
+                {newVersion ? <Text color="#ffd700">{`  (${t(lang, 'settings.latest', { latest: newVersion.latest })})`}</Text> : <Text dimColor>{`  (${t(lang, 'settings.upToDate')})`}</Text>}
+              </Text>
               <Box flexDirection="column">
-                <Text color={newVersion ? '#ffd700' : undefined}>{t(lang, `settings.step${n}`)}</Text>
-                <Text dimColor>{t(lang, `settings.step${n}Note`)}</Text>
+                <Text bold>{t(lang, 'settings.updateSteps')}</Text>
+                {(['1', '2'] as const).map(n => (
+                  <Box flexDirection="column">
+                    <Text color={newVersion ? '#ffd700' : undefined}>{t(lang, `settings.step${n}`)}</Text>
+                    <Text dimColor>{t(lang, `settings.step${n}Note`)}</Text>
+                  </Box>
+                ))}
               </Box>
-            ))}
-          </Box>
-          <Box flexDirection="column" marginTop={1}>
-            <Text bold color="#ffd700">{t(lang, 'terms.title')}</Text>
-            {termsBody(elements, lang, true)}
-          </Box>
-          <Box flexDirection="column" marginTop={1}>
-            <Text bold>{t(lang, 'settings.reset')}</Text>
-            {(await read($, confirmResetAtom)) ? (
-              <Box flexDirection="column">
-                <Text color="#ff5f5f">{t(lang, 'settings.resetWarning')}</Text>
-                <Box flexDirection="row" gap={2}>
-                  <Button key="reset-confirm" label={t(lang, 'settings.resetConfirm')} onPress={() => sendCommand($, ctx, { reset: true })} />
-                  <Button key="reset-cancel" label={t(lang, 'settings.resetCancel')} dimColor onPress={() => update($, confirmResetAtom, () => false)} />
-                </Box>
+            </Box>
+          ) : section === 'terms' ? (
+            termsBody(elements, lang, true)
+          ) : (await read($, confirmResetAtom)) ? (
+            <Box flexDirection="column">
+              <Text color="#ff5f5f">{t(lang, 'settings.resetWarning')}</Text>
+              <Box flexDirection="row" gap={2}>
+                <Button key="reset-confirm" label={t(lang, 'settings.resetConfirm')} onPress={() => sendCommand($, ctx, { reset: true })} />
+                <Button key="reset-cancel" label={t(lang, 'settings.resetCancel')} dimColor onPress={() => update($, confirmResetAtom, () => false)} />
               </Box>
-            ) : (
-              <Box flexDirection="row" gap={1}>
-                <Button key="reset" label={t(lang, 'settings.resetButton')} dimColor onPress={() => update($, confirmResetAtom, () => true)} />
-                <Text dimColor>{t(lang, 'settings.resetNote')}</Text>
-              </Box>
-            )}
-          </Box>
+            </Box>
+          ) : (
+            <Box flexDirection="row" gap={1}>
+              <Button key="reset" label={t(lang, 'settings.resetButton')} dimColor onPress={() => update($, confirmResetAtom, () => true)} />
+              <Text dimColor>{t(lang, 'settings.resetNote')}</Text>
+            </Box>
+          )}
         </Box>
       ) : (
         <Box flexDirection="column">

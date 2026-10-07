@@ -11,6 +11,10 @@ export type RelicAffix = { key: string; value: number }
 // nameParts は名前の形容詞と名詞の番号 (config/content.ts の relicAdjectives / relicNouns)。言語ごとに名前を引き直すのに使う
 export type Relic = { id: string; name: string; tier: number; affixes: RelicAffix[]; nameParts?: [number, number] }
 
+// 通知 (トースト) の種類。設定タブで種類ごとに出す・出さないを選べる
+export type NoteKind = 'floor' | 'boss' | 'death' | 'loot' | 'forge' | 'update'
+export type Note = { kind: NoteKind; text: string }
+
 export type Save = {
   // 使ったトークン (キャッシュ読み込みを割り引いた値) の累計
   tokens: number
@@ -34,6 +38,8 @@ export type Save = {
   nextId: number
   // 画面・記録・名前の言語。無ければ日本語
   lang?: 'ja' | 'en'
+  // 通知の種類ごとの出す・出さない。書かれていない種類は出す
+  notify?: Partial<Record<NoteKind, boolean>>
   // いるダンジョンの ID (config/content.ts の dungeons)。無ければ先頭のダンジョン
   dungeon?: string
   // 周回する階。無ければ自動攻略 (階段を降りるたびに次の階へ進む)
@@ -115,7 +121,7 @@ export type Scene = {
   flash?: string
 }
 
-export type Command = { seq: number; equip?: string; allocate?: string; refund?: string; forge?: ItemKind; salvageAll?: true; learnSkill?: string; equipSkill?: string; unequipSkill?: string; upgradeSkill?: string; refundSkill?: string; equipRelic?: string; unequipRelic?: string; discardRelic?: string; farm?: number; auto?: true; lang?: 'ja' | 'en'; reset?: true }
+export type Command = { seq: number; equip?: string; allocate?: string; refund?: string; forge?: ItemKind; salvageAll?: true; learnSkill?: string; equipSkill?: string; unequipSkill?: string; upgradeSkill?: string; refundSkill?: string; equipRelic?: string; unequipRelic?: string; discardRelic?: string; farm?: number; auto?: true; lang?: 'ja' | 'en'; reset?: true; notify?: { kind: NoteKind; on: boolean } }
 
 export type Inbox = {
   tokens: number
@@ -134,7 +140,8 @@ export type World = {
   driver: { id: string; at: number } | null
   applied: Record<string, { tokens: number; cmd: number }>
   isWorking: boolean
-  events: { seq: number; text: string }[]
+  // kind の無いものは旧形式の出来事で、通知の設定によらず出す
+  events: { seq: number; text: string; kind?: NoteKind }[]
   eventSeq: number
 }
 
@@ -154,6 +161,8 @@ declare module 'claude-code' {
       setupLang: 'ja' | 'en' | null
       // 設定タブでリセットを押し、確認を出している
       confirmReset: boolean
+      // 設定タブで開いている項目
+      settingsSection: 'language' | 'notify' | 'version' | 'terms' | 'data'
       // 動いている版 (plugin.json の version)
       version: string | null
       // 新しい版が出ていれば、動いている版と最新の版

@@ -9,7 +9,6 @@ import type { Lang } from './i18n'
 //   Enter 習得できるスキルは習得、習得済みならセット、セット中なら外す
 //   + (または u) 習得済みのスキルを強化する
 //   Backspace Lv を 1 つ下げる。Lv1 なら習得を取り消す (先のスキルが起点から切れる場合はできない)。使った SP は戻る
-//   1〜9 タブを切り替える
 // 習得・強化・セットは post でフック側 (register.tsx の ui.message) に渡す。
 
 export type SkillViewCell = { ch: string; color: string; bold: boolean; inverse: boolean }
@@ -39,7 +38,7 @@ export type SkillViewProps = {
   learnedCount: number
   equippedNames: string[]
 }
-export type SkillViewMessage = { learn: string } | { upgrade: string } | { refund: string } | { equip: string } | { unequip: string } | { tab: number }
+export type SkillViewMessage = { learn: string } | { upgrade: string } | { refund: string } | { equip: string } | { unequip: string }
 
 type State = { x: number; y: number }
 
@@ -63,7 +62,7 @@ const onKey = (surface: ClientSurface<State>, key: string) => {
   } else if (key === '+' || key === 'u') {
     const node = props.nodes.find(one => one.x === state.x && one.y === state.y)
     if (node && node.upgradeCost !== null) post({ upgrade: node.id })
-  } else if (/^[1-9]$/.test(key)) post({ tab: Number(key) })
+  }
 }
 
 

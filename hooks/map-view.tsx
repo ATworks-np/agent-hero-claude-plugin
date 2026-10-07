@@ -6,12 +6,11 @@ import type { Lang } from './i18n'
 //   ↑ ↓ ← → 階を選ぶ (到達した階まで)
 //   Enter 選んだ階を周回する (その階を何度も回る)
 //   a 自動攻略に戻す (到達した一番深い階から先へ進む)
-//   1〜9 タブを切り替える
 // 周回と自動攻略の切り替えは post でフック側 (register.tsx の ui.message) に渡す。
 
 // features は到達した階ごとの特徴 (features[0] が地下 1 階)
 export type MapViewProps = { lang: Lang; dungeon: string; floor: number; maxFloor: number; farmFloor: number | null; features: string[] }
-export type MapViewMessage = { farm: number } | { auto: true } | { tab: number }
+export type MapViewMessage = { farm: number } | { auto: true }
 
 const FLOORS_PER_ROW = 10
 type State = { floor: number }
@@ -29,7 +28,6 @@ const onKey = (surface: ClientSurface<State>, key: string) => {
   else if (key === 'down') moveTo(floor + FLOORS_PER_ROW)
   else if (key === 'return') surface.post({ farm: floor } satisfies MapViewMessage)
   else if (key === 'a') surface.post({ auto: true } satisfies MapViewMessage)
-  else if (/^[1-9]$/.test(key)) surface.post({ tab: Number(key) } satisfies MapViewMessage)
 }
 
 const MapView: ClientModule<MapViewProps, State> = (props, surface) => {

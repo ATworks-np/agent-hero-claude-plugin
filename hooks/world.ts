@@ -1,4 +1,4 @@
-import type { Inbox, World } from '../types'
+import type { Inbox, Note, World } from '../types'
 import { allocate, autoExplore, displayName, equip, farm, forge, refund, salvageAll, gainTokens, migrate, newSave, newScene, step } from './game'
 import type { Rng } from './game'
 import { equipSkill, learnSkill, refundSkill, unequipSkill, upgradeSkill } from './skills'
@@ -33,16 +33,16 @@ export const newWorld = (save = newSave()): World => ({
 export const isDriver = (world: World, me: string, now: number): boolean =>
   !world.driver || world.driver.id === me || now - world.driver.at > DRIVER_STALE_MS
 
-const pushEvents = (world: World, texts: string[]): World => {
-  if (texts.length === 0) return world
+const pushEvents = (world: World, notes: Note[]): World => {
+  if (notes.length === 0) return world
   let seq = world.eventSeq
-  const events = [...world.events, ...texts.map(text => ({ seq: ++seq, text }))].slice(-EVENT_CAP)
+  const events = [...world.events, ...notes.map(note => ({ seq: ++seq, text: note.text, kind: note.kind }))].slice(-EVENT_CAP)
   return { ...world, events, eventSeq: seq }
 }
 
 export const applyInboxes = (world: World, inboxes: Record<string, Inbox>, now: number, rng: Rng = Math.random): World => {
   let save = migrate(world.save)
-  const texts: string[] = []
+  const texts: Note[] = []
   const applied: World['applied'] = {}
   let resetRequested = false
   for (const [id, inbox] of Object.entries(inboxes)) {
@@ -55,6 +55,7 @@ export const applyInboxes = (world: World, inboxes: Record<string, Inbox>, now: 
       if (cmd.seq <= done.cmd) continue
       if (cmd.reset) resetRequested = true
       if (cmd.lang) save = { ...save, lang: cmd.lang }
+      if (cmd.notify) save = { ...save, notify: { ...save.notify, [cmd.notify.kind]: cmd.notify.on } }
       if (cmd.equip) save = equip(save, cmd.equip)
       if (cmd.allocate) save = allocate(save, cmd.allocate)
       if (cmd.refund) save = refund(save, cmd.refund)
@@ -72,7 +73,7 @@ export const applyInboxes = (world: World, inboxes: Record<string, Inbox>, now: 
       if (cmd.forge) {
         const r = forge(save, cmd.forge)
         save = r.save
-        if (r.result === 'success' && r.item) texts.push(t(langOf(save), 'note.forged', { item: displayName(r.item, langOf(save)) }))
+        if (r.result === 'success' && r.item) texts.push({ kind: 'forge', text: t(langOf(save), 'note.forged', { item: displayName(r.item, langOf(save)) }) })
       }
     }
     applied[id] = { tokens: Math.max(doneTokens, total), cmd: Math.max(done.cmd, ...inbox.cmds.map(cmd => cmd.seq)) }
@@ -85,5 +86,5 @@ export const applyInboxes = (world: World, inboxes: Record<string, Inbox>, now: 
 
 export const advance = (world: World, rng: Rng): World => {
   const r = step(world.save, world.scene, rng)
-  return pushEvents({ ...world, save: r.save, scene: r.scene }, r.notes.map(note => `⚔ ${note}`))
+  return pushEvents({ ...world, save: r.save, scene: r.scene }, r.notes.map(note => ({ ...note, text: `⚔ ${note.text}` })))
 }
