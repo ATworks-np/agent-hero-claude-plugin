@@ -322,7 +322,8 @@ const skillViewProps = (save: Save): SkillViewProps => {
         nextText: canUpgrade(save, skill.id) ? skillText(skill, level + 1, lang) : null,
         color: SKILL_COLORS[skill.branch],
         state: skillState(save, skill),
-        learnCost: learnCost(save),
+        cooldown: skill.cooldown(Math.max(1, level)),
+        nextCooldown: canUpgrade(save, skill.id) && skill.cooldown(level + 1) !== skill.cooldown(level) ? skill.cooldown(level + 1) : null,
         upgradeCost: canUpgrade(save, skill.id) ? upgradeCost() : null,
         canRefund: canRefundSkill(save, skill.id),
       }
@@ -795,7 +796,7 @@ export const register: Register = on => {
                     ) : canLearn(save, skill.id) ? (
                       <Button
                         key={`skill-${skill.id}`}
-                        label={t(lang, 'skill.learnCost', { cost })}
+                        label={t(lang, 'skill.learn')}
                         dimColor={sp < cost}
                         onPress={() => sendCommand($, ctx, { learnSkill: skill.id })}
                       />
@@ -806,7 +807,7 @@ export const register: Register = on => {
                       <Text color={isLearned ? SKILL_COLORS[skill.branch] : canLearn(save, skill.id) ? undefined : '#6c6c6c'} bold={isEquipped}>
                         {skillName(skill, lang)}{isLearned ? ` Lv${levelOf(save, skill.id)}` : ''}
                       </Text>{' '}
-                      <Text dimColor>{skillText(skill, Math.max(1, levelOf(save, skill.id)), lang)}</Text>
+                      <Text dimColor>{`${skillText(skill, Math.max(1, levelOf(save, skill.id)), lang)}  ${t(lang, 'skill.cooldown', { count: skill.cooldown(Math.max(1, levelOf(save, skill.id))) })}`}</Text>
                     </Text>
                     {canUpgrade(save, skill.id) && (
                       <Button

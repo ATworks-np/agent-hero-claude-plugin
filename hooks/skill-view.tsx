@@ -22,7 +22,9 @@ export type SkillViewNode = {
   nextText: string | null
   color: string
   state: 'equipped' | 'learned' | 'available' | 'locked'
-  learnCost: number
+  // 待ち時間 (勇者の攻撃の回数)。次の Lv で変わるなら nextCooldown に入る
+  cooldown: number
+  nextCooldown: number | null
   upgradeCost: number | null
   canRefund: boolean
 }
@@ -59,7 +61,7 @@ const onKey = (surface: ClientSurface<State>, key: string) => {
   } else if (key === 'backspace' || key === 'delete') {
     const node = props.nodes.find(one => one.x === state.x && one.y === state.y)
     if (node?.canRefund) post({ refund: node.id })
-  } else if (key === '+' || key === 'u') {
+  } else if (key === 'e') {
     const node = props.nodes.find(one => one.x === state.x && one.y === state.y)
     if (node && node.upgradeCost !== null) post({ upgrade: node.id })
   }
@@ -108,11 +110,12 @@ const SkillView: ClientModule<SkillViewProps, State> = (props, surface) => {
             </Text>
             {selected.level > 0 && <Text bold>{` Lv${selected.level}/${props.maxLevel}`}</Text>}
             <Text dimColor>{`  ${t(props.lang, `skill.state.${selected.state}`)}`}</Text>
-            {selected.state === 'available' && (
-              <Text color={props.sp >= selected.learnCost ? '#afffaf' : '#ff8787'}>{`  ${t(props.lang, 'skill.learnCost', { cost: selected.learnCost })}`}</Text>
-            )}
           </Text>
           <Text>{selected.text}</Text>
+          <Text color="#d787ff">
+            {t(props.lang, 'skill.cooldown', { count: selected.cooldown })}
+            {selected.nextCooldown !== null && <Text dimColor>{t(props.lang, 'skill.nextCooldown', { count: selected.nextCooldown })}</Text>}
+          </Text>
           {selected.nextText !== null && selected.upgradeCost !== null && (
             <Text dimColor>
               {t(props.lang, 'skill.nextLevel', { text: selected.nextText })}

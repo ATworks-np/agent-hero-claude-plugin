@@ -119,6 +119,9 @@ test('スキルの画面も矢印キーでスキルを移動できる', async ($
   await pane.press({ key: 'tab-skill' })
   const text = async () => JSON.stringify(await pane.drawn({ in: 'skill-view' }))
   expect(await text()).toContain('渾身斬り')
+  // 選んだスキルのクールタイムが出て、習得の SP は出ない
+  expect(await text()).toContain('クールタイム: 攻撃')
+  expect(await text()).not.toContain('習得 1 SP')
   const first = await text()
   await pane.key({ key: 'up', in: 'skill-view' })
   expect(await text()).not.toBe(first)
