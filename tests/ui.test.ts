@@ -140,6 +140,8 @@ test('設定のタブで言語のボタンが出る', async ($, on) => {
   expect(await pane.find({ key: 'lang-en' })).toBeDefined()
   expect(await pane.find({ key: 'lang-ja' })).toBeDefined()
   expect(await pane.find({ text: '  v0.1.0' })).toBeDefined()
+  expect(await pane.find({ text: '1. ! claude plugin marketplace update agent-hero' })).toBeDefined()
+  expect(await pane.find({ text: '3. /reload-plugins' })).toBeDefined()
   await pane.unmount()
 })
 

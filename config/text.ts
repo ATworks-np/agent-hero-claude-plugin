@@ -132,10 +132,17 @@ const ja = {
   'settings.version': 'バージョン',
   'settings.latest': '最新は v{latest}',
   'settings.upToDate': '最新',
+  'settings.updateSteps': '更新の手順',
+  'settings.step1': '1. ! claude plugin marketplace update agent-hero',
+  'settings.step1Note': '   公開されている最新の版の情報を取り寄せる',
+  'settings.step2': '2. ! claude plugin update agent-hero',
+  'settings.step2Note': '   プラグインを最新の版に入れ替える',
+  'settings.step3': '3. /reload-plugins',
+  'settings.step3Note': '   入れ替えた版を読み込む。反映されないときは Claude Code を再起動する',
 
   // アップデート
   'update.available': 'アップデートがあります (v{current} → v{latest})',
-  'update.how': '! claude plugin update agent-hero を実行してから /reload-plugins してください',
+  'update.how': '! claude plugin marketplace update agent-hero && claude plugin update agent-hero を実行してから /reload-plugins してください',
 
   // 記録とトースト
   'log.start': '冒険が始まった',
@@ -326,9 +333,16 @@ const en: Record<TextKey, string> = {
   'settings.version': 'Version',
   'settings.latest': 'latest is v{latest}',
   'settings.upToDate': 'up to date',
+  'settings.updateSteps': 'How to update',
+  'settings.step1': '1. ! claude plugin marketplace update agent-hero',
+  'settings.step1Note': '   Fetch the latest published version',
+  'settings.step2': '2. ! claude plugin update agent-hero',
+  'settings.step2Note': '   Replace the plugin with the latest version',
+  'settings.step3': '3. /reload-plugins',
+  'settings.step3Note': '   Load the new version. If it does not take effect, restart Claude Code',
 
   'update.available': 'An update is available (v{current} → v{latest})',
-  'update.how': 'Run ! claude plugin update agent-hero, then /reload-plugins',
+  'update.how': 'Run ! claude plugin marketplace update agent-hero && claude plugin update agent-hero, then /reload-plugins',
 
   'log.start': 'The adventure began',
   'log.nodeLevelUp': 'Raised T{tier} {name} to Lv{level}',

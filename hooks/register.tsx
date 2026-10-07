@@ -877,7 +877,15 @@ export const register: Register = on => {
               {`  v${(await read($, versionAtom)) ?? '?'}`}
               {newVersion ? <Text color="#ffd700">{`  (${t(lang, 'settings.latest', { latest: newVersion.latest })})`}</Text> : <Text dimColor>{`  (${t(lang, 'settings.upToDate')})`}</Text>}
             </Text>
-            {newVersion && <Text dimColor>{t(lang, 'update.how')}</Text>}
+          </Box>
+          <Box flexDirection="column" marginTop={1}>
+            <Text bold>{t(lang, 'settings.updateSteps')}</Text>
+            {(['1', '2', '3'] as const).map(n => (
+              <Box flexDirection="column">
+                <Text color={newVersion ? '#ffd700' : undefined}>{t(lang, `settings.step${n}`)}</Text>
+                <Text dimColor>{t(lang, `settings.step${n}Note`)}</Text>
+              </Box>
+            ))}
           </Box>
         </Box>
       ) : (

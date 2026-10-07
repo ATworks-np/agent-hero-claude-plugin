@@ -28,7 +28,15 @@ Claude Code のプロンプトで次の 1 行を実行してください。
 
 マーケットプレイスを追加するか聞かれたら `y` と答え、インストール先のスコープを選びます。ユーザースコープを選ぶと、すべてのプロジェクトで勇者が動きます。インストールが終わると、そのセッションですぐに動き始めます。
 
-新しい版が出ると、帯の 3 行目とペインの上に「アップデートがあります」と、更新のしかたが出ます。版の確認は 6 時間に 1 回、GitHub の `plugin.json` を読んで行います。更新は `claude plugin update agent-hero` のあと `/reload-plugins` で反映されます。進行は設定フォルダの `agent-hero/` (既定では `~/.claude/agent-hero/`) に保存するので、更新や入れ直しでは消えません。
+新しい版が出ると、帯の 3 行目とペインの上に「アップデートがあります」と、更新のしかたが出ます。版の確認は 6 時間に 1 回、GitHub の `plugin.json` を読んで行います。更新は次の順に実行します。手順は設定タブにも出ています。
+
+```
+! claude plugin marketplace update agent-hero
+! claude plugin update agent-hero
+/reload-plugins
+```
+
+進行は設定フォルダの `agent-hero/` (既定では `~/.claude/agent-hero/`) に保存するので、更新や入れ直しでは消えません。
 
 関数フック (function hooks) 形式のプラグインに対応した Claude Code が必要です。
 
