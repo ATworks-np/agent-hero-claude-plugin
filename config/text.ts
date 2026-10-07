@@ -139,12 +139,10 @@ const ja = {
   'settings.resetWarning': '進行・強化・スキル・装備・遺物がすべて消えます。元のセーブはバックアップとして ~/.claude/agent-hero/ に残ります。',
   'settings.resetConfirm': 'リセットする',
   'settings.resetCancel': 'やめる',
-  'settings.step1': '1. ! claude plugin marketplace update agent-hero',
-  'settings.step1Note': '   公開されている最新の版の情報を取り寄せる',
-  'settings.step2': '2. ! claude plugin update agent-hero',
-  'settings.step2Note': '   プラグインを最新の版に入れ替える',
-  'settings.step3': '3. /reload-plugins',
-  'settings.step3Note': '   入れ替えた版を読み込む。反映されないときは Claude Code を再起動する',
+  'settings.step1': '1. ! claude plugin update agent-hero',
+  'settings.step1Note': '   公開されている最新の版を取り寄せて入れ替える',
+  'settings.step2': '2. /reload-plugins',
+  'settings.step2Note': '   入れ替えた版を読み込む。反映されないときは Claude Code を再起動する',
 
   // はじめての起動
   'setup.prompt': '/agent-hero を入力して冒険を始めてください',
@@ -163,7 +161,7 @@ const ja = {
 
   // アップデート
   'update.available': 'アップデートがあります (v{current} → v{latest})',
-  'update.how': '! claude plugin marketplace update agent-hero && claude plugin update agent-hero を実行してから /reload-plugins してください',
+  'update.how': '! claude plugin update agent-hero を実行してから /reload-plugins してください',
 
   // 記録とトースト
   'log.start': '冒険が始まった',
@@ -361,12 +359,10 @@ const en: Record<TextKey, string> = {
   'settings.resetWarning': 'Progress, upgrades, skills, gear and relics will all be erased. The old save is kept as a backup in ~/.claude/agent-hero/.',
   'settings.resetConfirm': 'Reset',
   'settings.resetCancel': 'Cancel',
-  'settings.step1': '1. ! claude plugin marketplace update agent-hero',
-  'settings.step1Note': '   Fetch the latest published version',
-  'settings.step2': '2. ! claude plugin update agent-hero',
-  'settings.step2Note': '   Replace the plugin with the latest version',
-  'settings.step3': '3. /reload-plugins',
-  'settings.step3Note': '   Load the new version. If it does not take effect, restart Claude Code',
+  'settings.step1': '1. ! claude plugin update agent-hero',
+  'settings.step1Note': '   Download the latest published version and install it',
+  'settings.step2': '2. /reload-plugins',
+  'settings.step2Note': '   Load the new version. If it does not take effect, restart Claude Code',
 
   'setup.prompt': 'Type /agent-hero to start the adventure',
   'setup.chooseLanguage': 'Choose a language',
@@ -383,7 +379,7 @@ const en: Record<TextKey, string> = {
   'setup.back': 'Choose the language again',
 
   'update.available': 'An update is available (v{current} → v{latest})',
-  'update.how': 'Run ! claude plugin marketplace update agent-hero && claude plugin update agent-hero, then /reload-plugins',
+  'update.how': 'Run ! claude plugin update agent-hero, then /reload-plugins',
 
   'log.start': 'The adventure began',
   'log.nodeLevelUp': 'Raised T{tier} {name} to Lv{level}',

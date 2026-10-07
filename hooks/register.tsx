@@ -963,7 +963,7 @@ export const register: Register = on => {
           </Box>
           <Box flexDirection="column" marginTop={1}>
             <Text bold>{t(lang, 'settings.updateSteps')}</Text>
-            {(['1', '2', '3'] as const).map(n => (
+            {(['1', '2'] as const).map(n => (
               <Box flexDirection="column">
                 <Text color={newVersion ? '#ffd700' : undefined}>{t(lang, `settings.step${n}`)}</Text>
                 <Text dimColor>{t(lang, `settings.step${n}Note`)}</Text>
