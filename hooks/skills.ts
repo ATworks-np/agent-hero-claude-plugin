@@ -145,6 +145,12 @@ export const canLearn = (save: Save, id: SkillId): boolean => {
 export const canUpgrade = (save: Save, id: SkillId): boolean =>
   learned(save).includes(id) && levelOf(save, id) < MAX_SKILL_LEVEL
 
+// 今の SP で習得か強化ができるスキルがあるか
+export const canSpendSp = (save: Save, earnedSp: number): boolean => {
+  const sp = freeSp(save, earnedSp)
+  return [...SKILLS.keys()].some(id => (canLearn(save, id) && sp >= learnCost(save)) || (canUpgrade(save, id) && sp >= upgradeCost()))
+}
+
 const withLog = (save: Save, line: string): Save => ({ ...save, log: [...save.log, line].slice(-30) })
 
 export const learnSkill = (save: Save, id: SkillId, earnedSp: number): Save => {

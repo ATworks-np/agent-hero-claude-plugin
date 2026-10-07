@@ -390,6 +390,14 @@ export const nodeName = (node: TreeNode, lang: Lang): string => contentOf(lang).
 export const canLevelUp = (save: Save, id: string): boolean =>
   TREE_NODES.get(id)?.size === 'small' && nodeLevel(save, id) >= 1 && nodeLevel(save, id) < MAX_NODE_LEVEL
 
+// 今の memory で取れるノード (新しく取る、または小ノードの Lv を上げる) がどこかのページにあるか。
+// 費用はページごとに同じ (そのページで取った数だけで決まる) ので、ページごとに 1 回比べればよい
+export const canAffordUpgrade = (save: Save): boolean =>
+  Array.from({ length: PAGES }, (_, i) => i + 1).some(tier => {
+    if (save.memory < nodeCost(tier, countOnPage(save, tier))) return false
+    return availableNodes(save, tier).length > 0 || save.allocated.some(id => TREE_NODES.get(id)?.tier === tier && canLevelUp(save, id))
+  })
+
 export const pageNodes = (tier: number): TreeNode[] => [...TREE_NODES.values()].filter(node => node.tier === tier)
 
 // 強化ツリーで得たスキルポイント (取得済みの SP ノードの数)

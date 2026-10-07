@@ -13,6 +13,7 @@ import {
   levelOf,
   unequipSkill,
   upgradeCost,
+  canSpendSp,
   skillText,
   upgradeSkill,
   refundSkill,
@@ -147,4 +148,10 @@ test('雷撃の説明のボスへの割合は、実際のダメージと同じ v
   const p = BALANCE.skills.list.thunder!
   const v = p.base + p.perLevel! * 1
   expect(skillText(thunder, 1, 'ja')).toContain(`ボスには ${Math.round(v * p.bossRatio! * 1000) / 10}%`)
+})
+
+test('SP が足りて習得か強化ができるスキルがあるときだけ、SP を使えると判定する', async () => {
+  const save = newSave()
+  expect(canSpendSp(save, 0)).toBe(false)
+  expect(canSpendSp(save, 1)).toBe(true)
 })

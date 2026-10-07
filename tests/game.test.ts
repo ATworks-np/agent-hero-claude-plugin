@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 
 import { CORRIDOR, QUALITIES, TOKENS_PER_MEMORY, floorFeature, floorTheme, roomsOn, autoExplore, farm, tokenMultiplier, allocate, ratioDamage, defense, salvageAll, salvageValue, forge, forgeCost, forgeRate, refund, populate, attack, displayName, itemName, monsterName, gainTokens, makeEquipment, maxHp, migrate, newSave, newScene, spawn, spawnBoss, step, tierOf, weightedTokens } from '../hooks/game'
 import { makeRelic, relicName } from '../hooks/relics'
-import { PAGES, TREE_NODES, availableNodes, formatAmount, isStart, modLines, mods, nodeCost, unlockedPages } from '../hooks/tree'
+import { PAGES, TREE_NODES, canAffordUpgrade, availableNodes, formatAmount, isStart, modLines, mods, nodeCost, unlockedPages } from '../hooks/tree'
 import type { Save } from '../types'
 
 const usage = (input: number, output: number, cacheRead = 0) => ({
@@ -379,4 +379,11 @@ test('敵・装備・遺物の名前は言語ごとに引き直せる', async ()
   const relic = makeRelic('r1', 1, () => 0.3)
   expect(relicName(relic, 'ja')).toBe(relic.name)
   expect(relicName(relic, 'en')).toMatch(/^[A-Za-z' ]+$/)
+})
+
+test('memory が足りて取れるノードがあるときだけ、強化できると判定する', async () => {
+  const save = newSave()
+  expect(canAffordUpgrade(save)).toBe(false)
+  expect(canAffordUpgrade({ ...save, memory: nodeCost(1, 0) })).toBe(true)
+  expect(canAffordUpgrade({ ...save, memory: nodeCost(1, 0) - 1 })).toBe(false)
 })

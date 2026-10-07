@@ -32,7 +32,7 @@ import { RELIC_CAP, affixCount, equippedRelics, relicLines, relicName, relics } 
 import { contentOf, langOf, t } from './i18n'
 import type { Lang } from './i18n'
 import { LANGUAGES } from '../config/text'
-import { relicSlots, nodeName, MAX_NODE_LEVEL, PAGES, canLevelUp, nodeLevel, nodeText, skillPoints, availableNodes, compactTreeCells, modLines, mods, branchColor, countOnPage, formatAmount, isAllocated, isPageUnlocked, nodeCost, pageNodes, unlockText, unlockedPages } from './tree'
+import { relicSlots, nodeName, canAffordUpgrade, MAX_NODE_LEVEL, PAGES, canLevelUp, nodeLevel, nodeText, skillPoints, availableNodes, compactTreeCells, modLines, mods, branchColor, countOnPage, formatAmount, isAllocated, isPageUnlocked, nodeCost, pageNodes, unlockText, unlockedPages } from './tree'
 import type { TreeViewMessage, TreeViewProps } from './tree-view'
 import {
   MAX_SKILL_LEVEL,
@@ -41,6 +41,7 @@ import {
   SKILLS,
   canLearn,
   canRefundSkill,
+  canSpendSp,
   canUpgrade,
   equipped,
   freeSp,
@@ -644,6 +645,11 @@ export const register: Register = on => {
     const newVersion = await read($, updateAtom)
     const room = Math.max(3, (e.viewport?.rows ?? 24) - 6)
 
+    // memory や SP で何か取れるタブには印を付け、選んでいなくても明るく出す
+    const hasAction: Partial<Record<Tab, boolean>> = {
+      tree: canAffordUpgrade(save),
+      skill: canSpendSp(save, skillPoints(save)),
+    }
     // タブは 2 段に並べる
     const tabs = (
       <Box flexDirection="column">
@@ -652,11 +658,11 @@ export const register: Register = on => {
             {row.map((one, i) => (
               <Button
                 key={`tab-${one}`}
-                label={t(lang, `tab.${one}`)}
+                label={hasAction[one] ? `${t(lang, `tab.${one}`)} ●` : t(lang, `tab.${one}`)}
                 hotkey={String(r * TABS_FIRST_ROW + i + 1)}
                 // [ ] の枠なしで描く。選んでいないタブは薄く表示して、選んでいるタブと見分ける
                 plain
-                dimColor={one !== tab}
+                dimColor={one !== tab && !hasAction[one]}
                 onPress={() => selectTab($, one)}
               />
             ))}
